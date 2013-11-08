@@ -1,6 +1,9 @@
 # coding: utf-8
 
+import os
 from writeup import parse
+from nose.tools import raises
+dirname = os.path.abspath(os.path.dirname(__file__))
 
 
 def test_parse_meta():
@@ -42,5 +45,22 @@ def test_parse():
         '',
         'A content placeholder.',
     ])
-    article = parse.parse(text)
-    assert article['title'] == u'title'
+    meta, body = parse.parse(text)
+    assert meta['title'] == u'title'
+
+
+def test_read():
+    f = os.path.join(dirname, 'cases', 'parse', 'welcome-to-writeup.md')
+    post = parse.read(f, source=dirname)
+    assert post.title == u'Welcome to Writeup'
+    assert post.filename == u'welcome-to-writeup'
+    assert post.dirname == u'cases/parse'
+    assert post.url == u'/2013/welcome-to-writeup.html'
+    assert post.id == u'cases-parse-welcome-to-writeup'
+
+
+@raises(RuntimeError)
+def test_no_source():
+    f = os.path.join(dirname, 'cases', 'parse', 'welcome-to-writeup.md')
+    post = parse.read(f)
+    assert post.dirname == u'cases/parse'
