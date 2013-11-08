@@ -121,10 +121,7 @@ class Post(object):
         try:
             object.__getattribute__(self, key)
         except AttributeError:
-            value = self.meta.get(key)
-            if not value:
-                raise AttributeError('No such attribute: %s' % key)
-            return value
+            return self.meta.get(key, None)
 
     @property
     def id(self):
@@ -140,7 +137,10 @@ class Post(object):
 
     @property
     def dirname(self):
-        source = self._config.get('source', '_posts')
+        source = os.path.join(
+            os.path.abspath(self._config.get('source', '.')),
+            self._config.get('postsdir', '_posts')
+        )
         filepath = self.meta['filepath']
         relative = os.path.relpath(
             os.path.abspath(filepath),
@@ -162,3 +162,9 @@ class Post(object):
     @property
     def tags(self):
         return self.meta.get('tags', '').split()
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)

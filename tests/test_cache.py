@@ -1,7 +1,7 @@
 # coding: utf-8
 
-from writeup.cache import Cache
 import tempfile
+from writeup.cache import Cache
 
 
 def test_memcache():

@@ -51,7 +51,7 @@ def test_parse():
 
 def test_read():
     f = os.path.join(dirname, 'cases', 'parser', 'welcome-to-writeup.md')
-    post = parser.read(f, source=dirname)
+    post = parser.read(f, postsdir=dirname)
     assert post.title == u'Welcome to Writeup'
     assert post.filename == u'welcome-to-writeup'
     assert post.dirname == u'cases/parser'
