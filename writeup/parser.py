@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 """
-    writeup.parse
-    ~~~~~~~~~~~~~
+    writeup.parser
+    ~~~~~~~~~~~~~~
+
+    Parse a markdown file into a Post.
+
+    :copyright: (c) 2013 by Hsiaoming Yang
 """
 
 import os
@@ -19,6 +23,10 @@ def read(filepath, **kwargs):
         content = f.read()
 
     meta, body = parse(content)
+
+    if 'status' in meta and meta['status'] == 'draft':
+        return None
+
     meta['filepath'] = filepath
     return Post(body, meta, **kwargs)
 
