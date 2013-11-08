@@ -5,20 +5,30 @@
     ~~~~~~~~~~~~~
 """
 
+import os
 import re
+import unicodedata
 import hoedown as m
-from ._compat import to_unicode
+from ._compat import to_unicode, to_datetime
+
+
+def read(filepath, **kwargs):
+    """Read a file and parse it to a post."""
+
+    with open(filepath, 'r') as f:
+        content = f.read()
+
+    meta, body = parse(content)
+    meta['filepath'] = filepath
+    return Post(body, meta, **kwargs)
 
 
 def parse(text):
     """Parse a text and parse the meta data and content."""
     meta, body = re.split(r'\n---{3,}', text, 1)
-
     meta = parse_meta(to_unicode(text).strip())
-    ret = format_meta(meta)
-    ret['meta'] = meta
-    ret['body'] = to_unicode(body).strip()
-    return ret
+    body = to_unicode(body).strip()
+    return meta, body
 
 
 def parse_meta(text):
@@ -46,9 +56,101 @@ def parse_meta(text):
     return meta
 
 
-def format_meta(data):
-    """Handle special built-in meta data and rich format them."""
-    ret = {}
-    ret['title'] = data.pop('title', None)
-    ret['description'] = data.pop('description', None)
-    return ret
+def slugify(s):
+    """Make clean slug."""
+    rv = []
+    for c in unicodedata.normalize('NFKC', to_unicode(s)):
+        cat = unicodedata.category(c)[0]
+        if cat in 'LN' or c in '-_~':
+            rv.append(c)
+        if cat == 'Z':
+            rv.append(' ')
+    new = ''.join(rv).strip()
+    new = re.sub('[-\s]+', '-', new)
+    return new.lower()
+
+
+def permalink(post, style):
+    """Generate permalink by the given style.
+
+    A style is defined in _config.yml, an example::
+
+        /:year/:filename.html
+    """
+    pattern = re.compile(r':\w+')
+    keys = pattern.findall(style)
+    for key in keys:
+        try:
+            repl = getattr(post, key[1:])
+            style = style.replace(key, slugify(repl))
+        except AttributeError:
+            pass
+    return style
+
+
+class Post(object):
+    def __init__(self, body, meta, **kwargs):
+        if 'filepath' not in meta:
+            raise ValueError('filepath is not in meta')
+
+        self.body = body
+        self.title = meta.pop('title', None)
+        self.description = meta.pop('description', None)
+
+        if 'date' in meta:
+            self.date = to_datetime(meta.pop('date'))
+            self.year = self.date.year
+            self.month = self.date.month
+            self.day = self.date.day
+            self.type = 'post'
+        else:
+            self.type = 'page'
+
+        self.meta = meta
+        self._config = kwargs
+
+    def __getattr__(self, key):
+        try:
+            object.__getattribute__(self, key)
+        except AttributeError:
+            value = self.meta.get(key)
+            if not value:
+                raise AttributeError('No such attribute: %s' % key)
+            return value
+
+    @property
+    def id(self):
+        return u'-'.join((self.dirname.replace('/', '-'), self.filename))
+
+    @property
+    def filename(self):
+        if 'filename' not in self.meta:
+            filepath = self.meta['filepath']
+            basename = os.path.basename(filepath)
+            self.meta['filename'] = os.path.splitext(basename)[0]
+        return self.meta['filename']
+
+    @property
+    def dirname(self):
+        source = self._config.get('source', '_posts')
+        filepath = self.meta['filepath']
+        relative = os.path.relpath(
+            os.path.abspath(filepath),
+            os.path.abspath(source),
+        )
+        if relative.startswith('..'):
+            raise RuntimeError('Parse error for dirname.')
+        return os.path.dirname(relative)
+
+    @property
+    def url(self):
+        if 'url' not in self.meta:
+            style = self._config.get(
+                'permalink', '/:year/:filename.html'
+            )
+            self.meta['url'] = permalink(self, style)
+        return self.meta['url']
+
+    @property
+    def tags(self):
+        return self.meta.get('tags', '').split()

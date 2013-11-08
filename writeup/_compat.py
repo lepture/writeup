@@ -32,7 +32,7 @@ def to_unicode(value, encoding='utf-8'):
         return unicode_type(value, encoding=encoding)
 
     if isinstance(value, int):
-        return unicode_type(value, encoding=encoding)
+        return unicode_type(str(value))
 
     return value
 
