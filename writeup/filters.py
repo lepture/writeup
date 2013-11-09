@@ -16,7 +16,7 @@ from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 
 
-class AutolinkMixin(object):
+class AutolinkRenderer(m.HtmlRenderer):
     def autolink(self, link, is_email):
         if is_email:
             return '<a href="mailto:%(link)s">%(link)s</a>' % {'link': link}
@@ -76,11 +76,7 @@ class AutolinkMixin(object):
             return value
 
 
-class AutolinkRenderer(m.HtmlRenderer, AutolinkMixin):
-    pass
-
-
-class HighlightRenderer(m.HtmlRenderer, AutolinkMixin):
+class HighlightRenderer(AutolinkRenderer):
     def block_code(self, text, lang):
         if not lang:
             return u'<pre><code>%s</code></pre>' % escape(text)
@@ -105,6 +101,13 @@ class HighlightRenderer(m.HtmlRenderer, AutolinkMixin):
 
 
 def markdown(text, highlight=True, inlinestyles=False, linenos=False):
+    """Markdown filter for writeup.
+
+    :param text: the content to be markdownify
+    :param highlight: highlight the code block or not
+    :param inlinestyles: highlight the code with inline styles
+    :param linenos: show linenos of the highlighted code
+    """
     if not text:
         return u''
     if highlight:
