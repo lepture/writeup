@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+# coding: utf-8
+"""
+    writeup
+    ~~~~~~~
+
+    Writeup the binary.
+
+    :copyright: (c) 2013 Hsiaoming Yang
+"""
+
+import terminal
+import writeup
+from writeup.builder import Builder
+
+
+class WriteupCommand(terminal.Command):
+    def print_title(self, title):
+        if 'Option' in title:
+            print(terminal.magenta(title))
+        elif 'Command' in title:
+            print(terminal.green(title))
+        return self
+
+
+program = WriteupCommand('writeup', version=writeup.__version__)
+
+
+@program.subcommand
+def build(config='_config.yml', source='.', dest='_site', postdir='_posts',
+          force=False):
+    """Build your site.
+
+    :param config: Custom configuration file
+    :param source: Source for the site
+    :param dest: Output for the destination
+    :param postdir: Specify the post directory
+    :param force: Ignore cache, force build the site
+    """
+    builder = Builder(
+        config=config, source=source, sitedir=dest,
+        postdir=postdir, force=force,
+    )
+    builder.build()
+
+
+program.parse()

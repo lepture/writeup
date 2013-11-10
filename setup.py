@@ -12,7 +12,6 @@ try:
 except ImportError:
     from distutils.core import setup
 
-import imp
 from email.utils import parseaddr
 import writeup
 
@@ -31,14 +30,19 @@ setup(
     author_email=author_email,
     url=writeup.__homepage__,
     packages=["writeup"],
-    description="Blog software for Essay Up.",
+    description="Blog software for Essayup.",
     zip_safe=False,
     include_package_data=True,
     platforms='any',
     long_description=fread('README.rst'),
     license='BSD',
     install_requires=[
-        'hoedown',
+        'misaka',
+        'jinja2',
+        'terminal',
+    ],
+    scripts=[
+        'bin/writeup'
     ],
     tests_require=['nose'],
     test_suite='nose.collector',
