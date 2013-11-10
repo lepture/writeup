@@ -9,6 +9,7 @@
 """
 
 import os
+import re
 import shutil
 from ._compat import to_bytes
 

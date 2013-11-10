@@ -10,6 +10,7 @@
 """
 
 import os
+import re
 from . import parser
 from .cache import Cache
 from .utils import is_markdown, is_subdir, is_html
@@ -47,9 +48,7 @@ class Builder(object):
         jinja.globals.update({'site': site})
         self.jinja = jinja
 
-    def iters(self, is_page=False, subdirectory=None, count=None):
-        """Return an iterator for all posts."""
-
+    def cached_items(self, is_page=False, subdirectory=None):
         if is_page:
             key = '_pages'
         else:
@@ -70,14 +69,19 @@ class Builder(object):
             items = filter(fn, items)
 
         items = sorted(items, key=lambda o: o[1], reverse=True)
+        return items
+
+    def iters(self, is_page=False, subdirectory=None, count=None):
+        """Return an iterator for all posts."""
+        items = self.cached_items(is_page, subdirectory)
+
+        if count is not None:
+            items = items[:count]
+
         keys = [o[0] for o in items]
         item_count = len(keys)
 
         for i, k in enumerate(keys):
-
-            if count is not None and i >= count:
-                break
-
             post = self.cache.get(k)
 
             if not is_page:
@@ -171,36 +175,63 @@ class Builder(object):
         for post in self.iters(is_page=True):
             self.write(post, is_page=True)
 
-    def _build_paginator(self, filepath):
-        pass
-
-    def _build_html(self, filepath, dest):
-        with open(filepath, 'r') as f:
-            tpl = self.jinja.from_string(f.read())
-        content = tpl.render()
-        fwrite(dest, content)
-
     def build_files(self):
         """Build rest files to site directory."""
+
         sitedir = self.sitedir
 
+        def build_html(filepath, dest):
+            with open(filepath, 'r') as f:
+                tpl = self.jinja.from_string(f.read())
+            content = tpl.render()
+            fwrite(dest, content)
+
+        def build_paginator(filepath, dest):
+            with open(filepath, 'r') as f:
+                tpl = self.jinja.from_string(f.read())
+
+            relpath = os.path.relpath(filepath, self.postsdir)
+            dirname = os.path.dirname(relpath) or None
+
+            items = self.cached_items(subdirectory=dirname)
+            paginator = Paginator(items, 1)
+            paginator._cache = self.cache
+
+            # write current paginator
+            content = tpl.render({'paginator': paginator})
+            fwrite(dest, content)
+
+            if paginator.pages > 1:
+                style = self.config.get('paginator_style', 'page-:num')
+                for i in range(2, paginator.pages + 1):
+                    paginator.page = i
+                    url = style.replace(':num', i)
+                    if url.endswith('/'):
+                        url += 'index.html'
+                    elif not url.endswith('.html'):
+                        url += '.html'
+                    new_dest = re.sub(r'index.html$', url, dest)
+                    content = tpl.render({'paginator': paginator})
+                    fwrite(new_dest, content)
+
         for filepath in self.cache.get('_post_files') or ():
+            name = os.path.relpath(filepath, self.postsdir)
+            dest = os.path.join(sitedir, name)
+
             if filepath.endswith('/index.html'):
-                self._build_paginator(filepath)
+                build_paginator(filepath, dest)
             elif is_html(filepath):
-                name = os.path.relpath(filepath, self.postsdir)
-                self._build_html(filepath, os.path.join(sitedir, name))
+                build_html(filepath, dest)
             else:
-                name = os.path.relpath(filepath, self.postsdir)
-                fcopy(filepath, os.path.join(sitedir, name))
+                fcopy(filepath, dest)
 
         for filepath in self.cache.get('_page_files') or ():
+            name = os.path.relpath(filepath, self.source)
+            dest = os.path.join(sitedir, name)
             if is_html(filepath):
-                name = os.path.relpath(filepath, self.source)
-                self._build_html(filepath, os.path.join(sitedir, name))
+                build_html(filepath, dest)
             else:
-                name = os.path.relpath(filepath, self.source)
-                fcopy(filepath, os.path.join(sitedir, name))
+                fcopy(filepath, dest)
 
     def build(self):
         self.load_posts()
@@ -248,13 +279,56 @@ def create_jinja(**kwargs):
 
     jinja = Environment(
         loader=FileSystemLoader(loaders),
+        trim_blocks=True,
+        lstrip_blocks=True,
         autoescape=False,
     )
-    jinja.globals = {}
-
     jinja.filters.update(dict(
         markdown=filters.markdown,
     ))
 
     jinja._last_updated = max((os.path.getmtime(d) for d in loaders))
     return jinja
+
+
+class Paginator(object):
+    """Paginator generator."""
+
+    _cache = None
+    per_page = 100
+
+    def __init__(self, items, page):
+        self.items = items
+        self.page = page
+
+    @property
+    def total(self):
+        return len(self.items)
+
+    @property
+    def pages(self):
+        return int((self.total - 1) / self.per_page) + 1
+
+    @property
+    def has_prev(self):
+        return self.page > 1
+
+    @property
+    def prev_num(self):
+        return self.page - 1
+
+    @property
+    def has_next(self):
+        return self.page < self.pages
+
+    @property
+    def next_num(self):
+        return self.page + 1
+
+    @property
+    def posts(self):
+        start = (self.page - 1) * self.per_page
+        end = self.page * self.per_page
+        items = self.items[start:end]
+        for k, _ in items:
+            yield self._cache.get(k)
