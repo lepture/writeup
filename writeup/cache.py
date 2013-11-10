@@ -11,16 +11,15 @@
 import os
 import time
 import shutil
-import hashlib
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
 
-def _dir(cachedir, key):
-    md5 = hashlib.md5(key).hexdigest()
-    return os.path.join(cachedir, md5)
+def _key(cachedir, key):
+    key = key.replace('/', '-')
+    return os.path.join(cachedir, key)
 
 
 class Cache(object):
@@ -43,7 +42,7 @@ class Cache(object):
         """
         if not self._cachedir:
             return key in self._memcache
-        return os.path.exists(_dir(self._cachedir, key))
+        return os.path.exists(_key(self._cachedir, key))
 
     def get(self, key, default=None):
         """Get the data with the given key.
@@ -55,7 +54,7 @@ class Cache(object):
             if not item:
                 return default
             return item[0]
-        cachefile = _dir(self._cachedir, key)
+        cachefile = _key(self._cachedir, key)
         if not os.path.exists(cachefile):
             return default
         with open(cachefile) as f:
@@ -70,7 +69,7 @@ class Cache(object):
         if not self._cachedir:
             self._memcache[key] = (value, time.time())
             return self
-        cachefile = _dir(self._cachedir, key)
+        cachefile = _key(self._cachedir, key)
         with open(cachefile, 'wb') as f:
             pickle.dump(value, f)
             return self
@@ -89,7 +88,7 @@ class Cache(object):
             if key in self._memcache:
                 return self._memcache.pop(key)
 
-        cachefile = _dir(self._cachedir, key)
+        cachefile = _key(self._cachedir, key)
         if os.path.exists(cachefile):
             os.remove(cachefile)
 
@@ -107,7 +106,7 @@ class Cache(object):
             if not item:
                 return None
             return item[1]
-        cachefile = _dir(self._cachedir, key)
+        cachefile = _key(self._cachedir, key)
         if os.path.exists(cachefile):
             return os.path.getmtime(cachefile)
         return None

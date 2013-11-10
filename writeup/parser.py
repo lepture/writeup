@@ -130,8 +130,7 @@ class Post(object):
     @property
     def filename(self):
         if 'filename' not in self.meta:
-            filepath = self.meta['filepath']
-            basename = os.path.basename(filepath)
+            basename = os.path.basename(self.filepath)
             self.meta['filename'] = os.path.splitext(basename)[0]
         return self.meta['filename']
 
@@ -141,9 +140,8 @@ class Post(object):
             os.path.abspath(self._config.get('source', '.')),
             self._config.get('postsdir', '_posts')
         )
-        filepath = self.meta['filepath']
         relative = os.path.relpath(
-            os.path.abspath(filepath),
+            os.path.abspath(self.filepath),
             os.path.abspath(source),
         )
         if relative.startswith('..'):

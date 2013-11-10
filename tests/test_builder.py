@@ -27,6 +27,9 @@ class TestBuilder(object):
         self.builder.load_posts()
         assert len(list(self.builder.iters())) > 0
 
+    def test_build(self):
+        self.builder.build()
+
 
 class TestCacheBuilder(TestBuilder):
     def setUp(self):
