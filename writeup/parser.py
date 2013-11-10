@@ -33,8 +33,8 @@ def read(filepath, **kwargs):
 
 def parse(text):
     """Parse a text and parse the meta data and content."""
-    meta, body = re.split(r'\n---{3,}', text, 1)
-    meta = parse_meta(to_unicode(text).strip())
+    meta, body = re.split(r'\n---{3,}', to_unicode(text), 1)
+    meta = parse_meta(to_unicode(meta).strip())
     body = to_unicode(body).strip()
     return meta, body
 
@@ -69,7 +69,7 @@ def slugify(s):
     rv = []
     for c in unicodedata.normalize('NFKC', to_unicode(s)):
         cat = unicodedata.category(c)[0]
-        if cat in 'LN' or c in '-_~':
+        if cat in 'LN' or c in '-_~/':
             rv.append(c)
         if cat == 'Z':
             rv.append(' ')
@@ -101,6 +101,7 @@ class Post(object):
         if 'filepath' not in meta:
             raise ValueError('filepath is not in meta')
 
+        self.meta = meta
         self.body = body
         self.title = meta.pop('title', None)
         self.description = meta.pop('description', None)
@@ -114,12 +115,11 @@ class Post(object):
             # it is a draft post
             self.meta['status'] = 'draft'
 
-        self.meta = meta
         self._config = kwargs
 
     def __getattr__(self, key):
         try:
-            object.__getattribute__(self, key)
+            return object.__getattribute__(self, key)
         except AttributeError:
             return self.meta.get(key, None)
 
@@ -146,7 +146,9 @@ class Post(object):
         )
         if relative.startswith('..'):
             raise RuntimeError('Parse error for dirname.')
-        return os.path.dirname(relative)
+        dirname = os.path.dirname(relative)
+        # unix path
+        return dirname.replace('\\', '/')
 
     @property
     def url(self):

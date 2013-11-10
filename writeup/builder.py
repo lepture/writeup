@@ -141,7 +141,8 @@ class Builder(object):
     def write(self, post, is_page=False):
         """Write a single post into HTML."""
         if is_page:
-            dest = os.path.join(post.dirname, post.filename) + '.html'
+            dest = os.path.relpath(post.filepath, self.source)
+            dest = os.path.splitext(dest)[0] + '.html'
         else:
             if post.url.endswith('/'):
                 dest = post.url + 'index.html'
