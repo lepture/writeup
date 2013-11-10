@@ -42,6 +42,33 @@ def fcopy(source, dest):
     shutil.copy(source, dest)
 
 
+def fwalk(source, includes=None):
+    dirs = filter(
+        lambda f: os.path.isdir(os.path.join(source, f)),
+        os.listdir(source)
+    )
+
+    for dirpath, dirnames, filenames in os.walk(source, followlinks=True):
+        if '.git' in dirnames:
+            dirnames.remove('.git')
+        if '.hg' in dirnames:
+            dirnames.remove('.git')
+        if '.svn' in dirnames:
+            dirnames.remove('.git')
+        for name in dirs:
+            if name.startswith('.') and name in dirnames:
+                dirnames.remove(name)
+            elif name.startswith('_') and name in dirnames:
+                if not includes or name not in includes:
+                    dirnames.remove(name)
+
+        for filename in filenames:
+            filepath = os.path.join(dirpath, filename)
+            relpath = os.path.relpath(filepath, source)
+            if not relpath.startswith('_') and not relpath.startswith('.'):
+                yield filepath
+
+
 def is_subdir(source, target):
     """If target is a subdirectory of source."""
     relpath = os.path.relpath(source, target)

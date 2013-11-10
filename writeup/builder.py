@@ -13,7 +13,7 @@ import os
 from . import parser
 from .cache import Cache
 from .utils import is_markdown, is_subdir, is_html
-from .utils import fwrite, fcopy
+from .utils import fwrite, fcopy, fwalk
 
 
 class Builder(object):
@@ -32,6 +32,9 @@ class Builder(object):
         self.source = os.path.abspath(config.get('source', '.'))
         self.postsdir = os.path.join(
             self.source, config.get('postsdir', '_posts')
+        )
+        self.sitedir = os.path.join(
+            self.source, config.get('sitedir', '_site')
         )
         self.config = config
 
@@ -111,19 +114,11 @@ class Builder(object):
 
     def load_posts(self):
         """Load and parse posts in post directory."""
-        for root, dirs, files in os.walk(self.postsdir):
-            for name in dirs:
-                if name.startswith('.'):
-                    dirs.remove(name)
-                elif name.startswith('_'):
-                    dirs.remove(name)
-
-            for f in files:
-                filepath = os.path.join(root, f)
-                if is_markdown(f):
-                    self.read(filepath)
-                else:
-                    self.cache.add('_post_files', filepath)
+        for filepath in fwalk(self.postsdir):
+            if is_markdown(filepath):
+                self.read(filepath)
+            else:
+                self.cache.add('_post_files', filepath)
 
     def load_pages(self):
         includes = set(self.config.get('include', []))
@@ -133,19 +128,11 @@ class Builder(object):
         if '_layouts' in includes:
             includes.remove('_layouts')
 
-        for root, dirs, files in os.walk(self.source):
-            for name in dirs:
-                if name.startswith('.'):
-                    dirs.remove(name)
-                elif name.startswith('_') and name not in includes:
-                    dirs.remove(name)
-
-            for f in files:
-                filepath = os.path.join(root, f)
-                if is_markdown(f):
-                    self.read(filepath, 'page')
-                else:
-                    self.cache.add('_page_files', filepath)
+        for filepath in fwalk(self.source, includes):
+            if is_markdown(filepath):
+                self.read(filepath, 'page')
+            else:
+                self.cache.add('_page_files', filepath)
 
     def write(self, post, is_page=False):
         """Write a single post into HTML."""
@@ -159,8 +146,7 @@ class Builder(object):
             else:
                 dest = post.url + '.html'
 
-        sitedir = self.config.get('sitedir', '_site')
-        dest = os.path.join(sitedir, dest.lstrip('/'))
+        dest = os.path.join(self.sitedir, dest.lstrip('/'))
 
         if not self.config.get('force') and os.path.exists(dest):
             post_time = os.path.getmtime(post.filepath)
@@ -189,31 +175,31 @@ class Builder(object):
         pass
 
     def _build_html(self, filepath, dest):
-        tpl = self.jinja.get_template(filepath)
+        with open(filepath, 'r') as f:
+            tpl = self.jinja.from_string(f.read())
         content = tpl.render()
         fwrite(dest, content)
 
     def build_files(self):
         """Build rest files to site directory."""
-
-        sitedir = self.config.get('sitedir', '_site')
+        sitedir = self.sitedir
 
         for filepath in self.cache.get('_post_files') or ():
             if filepath.endswith('/index.html'):
                 self._build_paginator(filepath)
             elif is_html(filepath):
-                name = os.path.relpath(self.postsdir, filepath)
+                name = os.path.relpath(filepath, self.postsdir)
                 self._build_html(filepath, os.path.join(sitedir, name))
             else:
-                name = os.path.relpath(self.postsdir, filepath)
+                name = os.path.relpath(filepath, self.postsdir)
                 fcopy(filepath, os.path.join(sitedir, name))
 
         for filepath in self.cache.get('_page_files') or ():
             if is_html(filepath):
-                name = os.path.relpath(self.source, filepath)
+                name = os.path.relpath(filepath, self.source)
                 self._build_html(filepath, os.path.join(sitedir, name))
             else:
-                name = os.path.relpath(self.source, filepath)
+                name = os.path.relpath(filepath, self.source)
                 fcopy(filepath, os.path.join(sitedir, name))
 
     def build(self):
