@@ -34,7 +34,15 @@ class Builder(object):
 
         self.jinja = create_jinja(**config)
 
-    def read_post(self, filepath):
+    def iters(self, type='post'):
+        """Return an iterator for all posts."""
+        key = '_%ss' % type
+        index = self.cache.get(key) or {}
+        keys = sorted(index.items(), key=lambda o: o[1], reverse=True)
+        for k, _ in keys:
+            yield self.cache.get(k)
+
+    def read(self, filepath, type='post'):
         """Read and index a single post."""
         mtime = self.cache.mtime(filepath)
         if mtime and mtime > os.path.getmtime(filepath):
@@ -43,13 +51,11 @@ class Builder(object):
 
         post = parser.read(filepath, **self.config)
         self.cache.set(filepath, post)
-        if self.cache._cachedir:
-            post = CachedPost(self.cache, post)
 
-        # create index
-        cache = self.cache.get('_posts', {})
-        cache[post.id] = post
-        self.cache.set('_posts', cache)
+        key = '_%ss' % type
+        index = self.cache.get(key) or {}
+        index[filepath] = post.date
+        self.cache.set(key, index)
         return post
 
     def load_posts(self):
@@ -67,10 +73,8 @@ class Builder(object):
 
             for f in files:
                 filepath = os.path.join(root, f)
-                ext = os.path.splitext(f)
-                if ext in ('.md', '.mkd', '.markdown'):
-                    # this is a markdown post
-                    self.read_post(filepath)
+                if _is_markdown(f):
+                    self.read(filepath)
                 else:
                     self.cache.add('_posts_files', filepath)
 
@@ -88,6 +92,10 @@ class Builder(object):
 
             for f in files:
                 filepath = os.path.join(root, f)
+                if _is_markdown(f):
+                    self.read(filepath, 'page')
+                else:
+                    self.cache.add('_page_files', filepath)
 
     def write_post(self, post):
         """Write a single post into HTML."""
@@ -107,26 +115,6 @@ class Builder(object):
 
     def build(self):
         pass
-
-
-class CachedPost(object):
-    def __init__(self, cache, post):
-        post.body = None
-        self.__post = post
-        self.__cache = cache
-
-    def __getattr__(self, key):
-        try:
-            return object.__getattribute__(self.__post, key)
-        except AttributeError:
-            self.__post = self.__cache.get(self.__post.filepath)
-            return object.__getattribute__(self.__post, key)
-
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, d):
-        self.__dict__.update(d)
 
 
 def load_config(filepath='_config.yml'):
@@ -160,3 +148,8 @@ def create_jinja(**kwargs):
         autoescape=False,
     )
     return jinja
+
+
+def _is_markdown(filepath):
+    ext = os.path.splitext(filepath)[1]
+    return ext in ('.md', '.mkd', '.markdown')

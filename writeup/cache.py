@@ -75,6 +75,11 @@ class Cache(object):
             pickle.dump(value, f)
             return self
 
+    def add(self, key, value):
+        cache = self.get(key, set())
+        cache.add(value)
+        self.set(key, cache)
+
     def clear(self, key):
         """Delete the cache data with the given key.
 

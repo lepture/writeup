@@ -15,13 +15,17 @@ class TestBuilder(object):
         builder = Builder(config=config, source=source, postsdir=postsdir)
         self.builder = builder
 
-    def test_read_post(self):
+    def test_read(self):
         f = os.path.join(postsdir, 'welcome-to-writeup.md')
-        post = self.builder.read_post(f)
+        post = self.builder.read(f)
         assert post.title == u'Welcome to Writeup'
 
-        post = self.builder.read_post(f)
+        post = self.builder.read(f)
         assert post is None
+
+    def test_load_posts(self):
+        self.builder.load_posts()
+        assert len(list(self.builder.iters())) > 0
 
 
 class TestCacheBuilder(TestBuilder):
