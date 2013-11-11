@@ -109,6 +109,8 @@ class Builder(object):
 
         post = parser.read(filepath, **self.config)
         self.cache.set(filepath, post)
+        if post.meta.get('status', 'publish') == 'draft':
+            return post
 
         if is_page:
             key = '_pages'
