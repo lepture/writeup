@@ -43,7 +43,7 @@ def fcopy(source, dest):
     shutil.copy(source, dest)
 
 
-def fwalk(source, includes=None):
+def fwalk(source, includes=None, excludes=None):
     dirs = filter(
         lambda f: os.path.isdir(os.path.join(source, f)),
         os.listdir(source)
@@ -64,9 +64,12 @@ def fwalk(source, includes=None):
                     dirnames.remove(name)
 
         for filename in filenames:
+            if filename.startswith('.'):
+                # ignore hidden files
+                continue
             filepath = os.path.join(dirpath, filename)
             relpath = os.path.relpath(filepath, source)
-            if relpath != '_config.yml':
+            if not (excludes and relpath in excludes):
                 yield filepath
 
 

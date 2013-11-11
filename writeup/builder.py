@@ -129,13 +129,14 @@ class Builder(object):
 
     def load_pages(self):
         includes = set(self.config.get('includes', []))
+        excludes = set(self.config.get('excludes', []))
         postsdir = self.config.get('postsdir', '_posts')
         if postsdir in includes:
             includes.remove(postsdir)
         if '_layouts' in includes:
             includes.remove('_layouts')
 
-        for filepath in fwalk(self.source, includes):
+        for filepath in fwalk(self.source, includes, excludes):
             if is_markdown(filepath):
                 self.read(filepath, 'page')
             else:
@@ -272,6 +273,7 @@ def load_config(filepath='_config.yml'):
     config.setdefault('postsdir', '_posts')
     config.setdefault('sitedir', '_site')
     config.setdefault('permalink', '/:year/:filename.html')
+    config.setdefault('excludes', [filepath])
     return config
 
 
