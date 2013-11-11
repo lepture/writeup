@@ -123,3 +123,8 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False):
     )
     md = m.Markdown(renderer, extensions=extensions)
     return md.render(text)
+
+
+def xmldatetime(date):
+    """Convert a Date into XML Schema."""
+    return date.strftime('%Y-%m-%dT%H:%M:%SZ')

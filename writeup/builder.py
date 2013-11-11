@@ -11,8 +11,10 @@
 
 import os
 import re
+import datetime
 from . import parser
 from .cache import Cache
+from ._compat import to_unicode
 from .utils import is_markdown, is_subdir, is_html
 from .utils import fwrite, fcopy, fwalk
 
@@ -45,6 +47,7 @@ class Builder(object):
         jinja = create_jinja(**config)
         site = config.copy()
         site['posts'] = self.iters
+        site['now'] = datetime.datetime.utcnow()
         jinja.globals.update({'site': site})
         self.jinja = jinja
 
@@ -125,7 +128,7 @@ class Builder(object):
                 self.cache.add('_post_files', filepath)
 
     def load_pages(self):
-        includes = set(self.config.get('include', []))
+        includes = set(self.config.get('includes', []))
         postsdir = self.config.get('postsdir', '_posts')
         if postsdir in includes:
             includes.remove(postsdir)
@@ -183,19 +186,32 @@ class Builder(object):
 
         def build_html(filepath, dest):
             with open(filepath, 'r') as f:
-                tpl = self.jinja.from_string(f.read())
+                tpl = self.jinja.from_string(to_unicode(f.read()))
             content = tpl.render()
             fwrite(dest, content)
 
         def build_paginator(filepath, dest):
             with open(filepath, 'r') as f:
-                tpl = self.jinja.from_string(f.read())
+                tpl = self.jinja.from_string(to_unicode(f.read()))
 
             relpath = os.path.relpath(filepath, self.postsdir)
             dirname = os.path.dirname(relpath) or None
 
+            root = os.path.relpath(dest, self.sitedir)
+            root = re.sub(r'index.html$', '', root)
+            root = root.replace('\\', '/')
+            if root == '.':
+                root = '/'
+            else:
+                root = '/' + root
+
             items = self.cached_items(subdirectory=dirname)
             paginator = Paginator(items, 1)
+            paginator.per_page = self.config.get('per_page', 100)
+            paginator._style = self.config.get(
+                'paginator_style', 'page-:num'
+            )
+            paginator._root = root
             paginator._cache = self.cache
 
             # write current paginator
@@ -203,10 +219,9 @@ class Builder(object):
             fwrite(dest, content)
 
             if paginator.pages > 1:
-                style = self.config.get('paginator_style', 'page-:num')
                 for i in range(2, paginator.pages + 1):
                     paginator.page = i
-                    url = style.replace(':num', i)
+                    url = paginator._style.replace(':num', str(i))
                     if url.endswith('/'):
                         url += 'index.html'
                     elif not url.endswith('.html'):
@@ -286,6 +301,7 @@ def create_jinja(**kwargs):
     )
     jinja.filters.update(dict(
         markdown=filters.markdown,
+        xmldatetime=filters.xmldatetime,
     ))
 
     jinja._last_updated = max((os.path.getmtime(d) for d in loaders))
@@ -296,6 +312,9 @@ class Paginator(object):
     """Paginator generator."""
 
     _cache = None
+    _style = 'page-:num'
+    _root = '/'
+
     per_page = 100
 
     def __init__(self, items, page):
@@ -319,12 +338,24 @@ class Paginator(object):
         return self.page - 1
 
     @property
+    def prev_url(self):
+        if self.prev_num == 1:
+            return self._root
+        ret = self._style.replace(':num', str(self.prev_num))
+        return self._root + ret
+
+    @property
     def has_next(self):
         return self.page < self.pages
 
     @property
     def next_num(self):
         return self.page + 1
+
+    @property
+    def next_url(self):
+        ret = self._style.replace(':num', str(self.next_num))
+        return self._root + ret
 
     @property
     def posts(self):

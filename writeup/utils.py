@@ -66,7 +66,7 @@ def fwalk(source, includes=None):
         for filename in filenames:
             filepath = os.path.join(dirpath, filename)
             relpath = os.path.relpath(filepath, source)
-            if not relpath.startswith('_') and not relpath.startswith('.'):
+            if relpath != '_config.yml':
                 yield filepath
 
 
