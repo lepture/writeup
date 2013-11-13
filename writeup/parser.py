@@ -14,7 +14,7 @@ import re
 import pytz
 import yaml
 import unicodedata
-import hoedown as m
+import misaka as m
 from ._compat import to_unicode, to_datetime
 
 

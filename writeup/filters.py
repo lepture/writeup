@@ -62,19 +62,6 @@ class AutolinkRenderer(m.HtmlRenderer):
             ) % {'id': match.group(1), 'link': link, 'title': title}
             return value
 
-        #: ascii.io
-        pattern = r'(http:\/\/ascii\.io\/a\/\d+)'
-        match = re.match(pattern, link)
-        if match:
-            value = (
-                '<iframe width="566" height="600" frameborder="0" '
-                'src="%(url)s/raw" '
-                'allowFullScreen></iframe>'
-                '<div><a rel="nofollow" href="%(link)s">'
-                '%(title)s</a></div>'
-            ) % {'url': match.group(1), 'link': link, 'title': title}
-            return value
-
 
 class HighlightRenderer(AutolinkRenderer):
     def block_code(self, text, lang):
