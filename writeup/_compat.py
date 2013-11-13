@@ -50,6 +50,10 @@ def to_datetime(value):
         return None
     if isinstance(value, datetime.datetime):
         return value
+    if isinstance(value, datetime.date):
+        return datetime.datetime.combine(
+            value, datetime.datetime.min.time()
+        )
     supported_formats = [
         '%a %b %d %H:%M:%S %Y',
         '%Y-%m-%d %H:%M:%S',

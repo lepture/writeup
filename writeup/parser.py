@@ -12,6 +12,7 @@
 import os
 import re
 import pytz
+import yaml
 import unicodedata
 import hoedown as m
 from ._compat import to_unicode, to_datetime
@@ -56,7 +57,7 @@ def parse_meta(text):
     items = re.findall(r'<li>(.*?)</li>', html, re.S)
     for item in items:
         key, value = item.split(':', 1)
-        meta[key.rstrip()] = value.lstrip()
+        meta[key.rstrip()] = yaml.load(value.lstrip())
 
     desc = re.findall(r'<p>(.*?)</p>', html, re.S)
     if desc:
@@ -168,7 +169,10 @@ class Post(object):
 
     @property
     def tags(self):
-        return self.meta.get('tags', '').split()
+        tags = self.meta.get('tags', '')
+        if isinstance(tags, (tuple, list)):
+            return tags
+        return map(lambda o: o.strip(), tags.split(','))
 
     def __getstate__(self):
         return self.__dict__

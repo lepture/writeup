@@ -126,5 +126,7 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False):
 
 
 def xmldatetime(date):
-    """Convert a Date into XML Schema."""
-    return date.strftime('%Y-%m-%dT%H:%M:%S %Z%z')
+    """Convert a Date into XML Schema RFC3339 format."""
+    time = date.strftime('%Y-%m-%dT%H:%M:%S')
+    tz = date.strftime('%z')
+    return time + tz[:3] + ':' + tz[3:]
