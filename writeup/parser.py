@@ -108,6 +108,7 @@ class Post(object):
         self.title = meta.pop('title', None)
         self.description = meta.pop('description', None)
 
+        self.type = kwargs.get('type', 'post')
         self._config = kwargs
 
         if 'date' in meta:
@@ -122,8 +123,6 @@ class Post(object):
             self.month = date.month
             self.day = date.day
             self.date = date
-        else:
-            self.meta['type'] = 'page'
 
     def __getattr__(self, key):
         try:
@@ -144,10 +143,11 @@ class Post(object):
 
     @property
     def dirname(self):
-        source = os.path.join(
-            os.path.abspath(self._config.get('source', '.')),
-            self._config.get('postsdir', '_posts')
-        )
+        source = os.path.abspath(self._config.get('source', '.'))
+        if self.type == 'post':
+            source = os.path.join(
+                source, self._config.get('postsdir', '_posts')
+            )
         relative = os.path.relpath(
             os.path.abspath(self.filepath),
             os.path.abspath(source),
@@ -164,7 +164,15 @@ class Post(object):
             style = self._config.get(
                 'permalink', '/:year/:filename.html'
             )
-            self.meta['url'] = permalink(self, style)
+            if self.type == 'post':
+                self.meta['url'] = permalink(self, style)
+            else:
+                url = '/%s/%s' % (self.dirname, self.filename)
+                if style.endswith('.html'):
+                    url += '.html'
+                elif style.endswith('/'):
+                    url += '/'
+                self.meta['url'] = url
         return self.meta['url']
 
     @property

@@ -131,15 +131,15 @@ class Builder(object):
             # cache is fresh
             return
 
-        post = parser.read(filepath, **self.config)
+        if is_page:
+            type = 'page'
+        else:
+            type = 'post'
+        post = parser.read(filepath, type=type, **self.config)
         self.cache.set(filepath, post)
         if post.meta.get('status', 'publish') == 'draft':
             return post
-
-        if is_page:
-            key = '_pages'
-        else:
-            key = '_posts'
+        key = '_%ss' % type
         index = self.cache.get(key) or {}
         index[filepath] = post.date
         self.cache.set(key, index)
