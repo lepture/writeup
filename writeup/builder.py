@@ -11,6 +11,8 @@
 
 import os
 import re
+import pytz
+import hashlib
 import datetime
 from . import parser
 from .cache import Cache
@@ -47,9 +49,31 @@ class Builder(object):
         jinja = create_jinja(**config)
         site = config.copy()
         site['posts'] = self.iters
-        site['now'] = datetime.datetime.utcnow()
-        jinja.globals.update({'site': site})
+
+        tz = pytz.timezone(config.get('timezone', 'Asia/Chongqing'))
+        site['now'] = tz.localize(datetime.datetime.now())
+
+        jinja.globals.update({
+            'site': site,
+            'static_url': self.static_url,
+        })
         self.jinja = jinja
+
+    def static_url(self, filepath, url=None):
+        """Generate static url."""
+        if not url:
+            url = '/' + filepath
+
+        key = '_static_%s' % filepath
+        value = self.cache.get(key)
+
+        if not value:
+            abspath = os.path.join(self.source, filepath)
+            with open(abspath, 'r') as f:
+                content = f.read()
+            value = hashlib.md5(content).hexdigest()[:5]
+            self.cache.set(key, value)
+        return '%s?v=%s' % (url, value)
 
     def cached_items(self, is_page=False, subdirectory=None):
         if is_page:

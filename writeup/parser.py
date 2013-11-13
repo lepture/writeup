@@ -11,6 +11,7 @@
 
 import os
 import re
+import pytz
 import unicodedata
 import hoedown as m
 from ._compat import to_unicode, to_datetime
@@ -106,15 +107,22 @@ class Post(object):
         self.title = meta.pop('title', None)
         self.description = meta.pop('description', None)
 
+        self._config = kwargs
+
         if 'date' in meta:
-            self.date = to_datetime(meta.pop('date'))
-            self.year = self.date.year
-            self.month = self.date.month
-            self.day = self.date.day
+            timezone = self.meta.get('timezone')
+            if not timezone:
+                timezone = kwargs.get('timezone', 'Asia/Chongqing')
+
+            tz = pytz.timezone(timezone)
+            date = tz.localize(to_datetime(meta.pop('date')))
+
+            self.year = date.year
+            self.month = date.month
+            self.day = date.day
+            self.date = date
         else:
             self.meta['type'] = 'page'
-
-        self._config = kwargs
 
     def __getattr__(self, key):
         try:

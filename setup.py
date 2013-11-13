@@ -37,9 +37,11 @@ setup(
     long_description=fread('README.rst'),
     license='BSD',
     install_requires=[
+        'pytz',
         'misaka',
         'jinja2',
         'terminal',
+        'unicodedata',
     ],
     scripts=[
         'bin/writeup'

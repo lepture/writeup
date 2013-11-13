@@ -127,4 +127,4 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False):
 
 def xmldatetime(date):
     """Convert a Date into XML Schema."""
-    return date.strftime('%Y-%m-%dT%H:%M:%SZ')
+    return date.strftime('%Y-%m-%dT%H:%M:%S %Z%z')
