@@ -112,8 +112,7 @@ class Post(object):
             self.month = self.date.month
             self.day = self.date.day
         else:
-            # it is a draft post
-            self.meta['status'] = 'draft'
+            self.meta['type'] = 'page'
 
         self._config = kwargs
 

@@ -24,7 +24,7 @@ def fread(filename):
 
 
 setup(
-    name='writeup',
+    name='Writeup',
     version=writeup.__version__,
     author=author,
     author_email=author_email,

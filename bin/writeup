@@ -9,21 +9,12 @@
     :copyright: (c) 2013 Hsiaoming Yang
 """
 
-import terminal
+import sys
 import writeup
-from writeup.builder import Builder
+from terminal.builtin import Command
 
 
-class WriteupCommand(terminal.Command):
-    def print_title(self, title):
-        if 'Option' in title:
-            print(terminal.magenta(title))
-        elif 'Command' in title:
-            print(terminal.green(title))
-        return self
-
-
-program = WriteupCommand('writeup', version=writeup.__version__)
+program = Command('writeup', version=writeup.__version__)
 
 
 @program.subcommand
@@ -37,11 +28,29 @@ def build(config='_config.yml', source='.', dest='_site', postdir='_posts',
     :param postdir: Specify the post directory
     :param force: Ignore cache, force build the site
     """
+    from writeup.builder import Builder
     builder = Builder(
         config=config, source=source, sitedir=dest,
         postdir=postdir, force=force,
     )
     builder.build()
+
+
+@program.subcommand
+def serve(sitedir='_site', host='0.0.0.0', port=4000):
+    """Start a preview server.
+
+    :param sitedir: serve the sitedir as the source root
+    :param host: define server hostname
+    :param port: define server port
+    """
+    from writeup.server import Server
+    server = Server(sitedir)
+    try:
+        server.serve_forever(host, port)
+    except KeyboardInterrupt:
+        print('\rShut down.')
+        sys.exit()
 
 
 program.parse()
