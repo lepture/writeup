@@ -35,7 +35,7 @@ def read(filepath, **kwargs):
 
 def parse(text):
     """Parse a text and parse the meta data and content."""
-    meta, body = re.split(r'\n---{3,}', to_unicode(text), 1)
+    meta, body = re.split(r'\n-{3,}', to_unicode(text), 1)
     meta = parse_meta(to_unicode(meta).strip())
     body = to_unicode(body).strip()
     return meta, body
