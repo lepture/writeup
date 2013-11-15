@@ -117,3 +117,23 @@ def xmldatetime(date):
     time = date.strftime('%Y-%m-%dT%H:%M:%S')
     tz = date.strftime('%z')
     return time + tz[:3] + ':' + tz[3:]
+
+
+word_pattern = re.compile(
+    u'[a-zA-Z0-9_\u0392-\u03c9]+|'
+    u'[\u4E00-\u9FFF\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\uac00-\ud7af]+',
+    re.UNICODE
+)
+
+
+def wordcount(data):
+    """Word count for ASCII and CJK."""
+    ret = word_pattern.findall(data)
+    count = 0
+    for s in ret:
+        if ord(s[0]) >= 12352:
+            # this is cjk
+            count += len(s)
+        else:
+            count += 1
+    return count

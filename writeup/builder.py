@@ -330,6 +330,7 @@ def create_jinja(**kwargs):
     jinja.filters.update(dict(
         markdown=filters.markdown,
         xmldatetime=filters.xmldatetime,
+        wordcount=filters.wordcount,
     ))
 
     jinja._last_updated = max((os.path.getmtime(d) for d in loaders))
