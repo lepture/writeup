@@ -48,7 +48,9 @@ class Builder(object):
         # initialize jinja environment
         jinja = create_jinja(**config)
         site = config.copy()
+
         site['posts'] = self.iters
+        site['tags'] = lambda: self.cache.get('_tags', {})
 
         tz = pytz.timezone(config.get('timezone', 'Asia/Chongqing'))
         site['now'] = tz.localize(datetime.datetime.now())
@@ -130,7 +132,6 @@ class Builder(object):
         if mtime and mtime > os.path.getmtime(filepath):
             # cache is fresh
             return
-
         if is_page:
             type = 'page'
         else:
@@ -139,6 +140,17 @@ class Builder(object):
         self.cache.set(filepath, post)
         if post.meta.get('status', 'publish') == 'draft':
             return post
+
+        # record tags
+        tags = self.cache.get('_tags', {})
+        if post.tags:
+            for tag in post.tags:
+                if tag in tags:
+                    tags[tag] += 1
+                else:
+                    tags[tag] = 1
+        self.cache.set('_tags', tags)
+
         key = '_%ss' % type
         index = self.cache.get(key) or {}
         index[filepath] = post.date
