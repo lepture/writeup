@@ -167,7 +167,10 @@ class Post(object):
             if self.type == 'post':
                 self.meta['url'] = permalink(self, style)
             else:
-                url = '/%s/%s' % (self.dirname, self.filename)
+                if self.dirname:
+                    url = '/%s/%s' % (self.dirname, self.filename)
+                else:
+                    url = '/%s' % self.filename
                 if style.endswith('.html'):
                     url += '.html'
                 elif style.endswith('/'):
@@ -180,6 +183,8 @@ class Post(object):
         tags = self.meta.get('tags', '')
         if isinstance(tags, (tuple, list)):
             return tags
+        if not tags:
+            return []
         return map(lambda o: o.strip(), tags.split(','))
 
     def __getstate__(self):
