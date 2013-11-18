@@ -25,12 +25,12 @@ def test_highlight_markdown():
     assert 'highlight' in html
 
 
-def test_highlight_markdown():
+def test_linenos_markdown():
     html = filters.markdown(text, highlight=True, linenos=True)
     assert 'linenos' in html
 
 
-def test_highlight_markdown():
+def test_inline_markdown():
     html = filters.markdown(text, highlight=True, inlinestyles=True)
     assert 'background:' in html
 
