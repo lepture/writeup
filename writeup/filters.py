@@ -61,6 +61,8 @@ class AutolinkRenderer(m.HtmlRenderer):
                 '%(title)s</a></div>'
             ) % {'id': match.group(1), 'link': link, 'title': title}
             return value
+        return '<a href="%(link)s">%(title)s</a>' % \
+                {'link': link, 'title': title}
 
 
 class HighlightRenderer(AutolinkRenderer):
