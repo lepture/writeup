@@ -326,6 +326,11 @@ def create_jinja(**kwargs):
         trim_blocks=True,
         lstrip_blocks=True,
         autoescape=False,
+        extensions=[
+            'jinja2.ext.do',
+            'jinja2.ext.loopcontrols',
+            'jinja2.ext.with_',
+        ]
     )
     jinja.filters.update(dict(
         markdown=filters.markdown,
