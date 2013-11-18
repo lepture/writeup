@@ -41,7 +41,8 @@ setup(
         'misaka',
         'jinja2',
         'terminal',
-        'unicodedata',
+        'PyYAML',
+        'Pygments',
     ],
     scripts=[
         'bin/writeup'
