@@ -77,7 +77,7 @@ class Builder(object):
             self.cache.set(key, value)
         return '%s?v=%s' % (url, value)
 
-    def cached_items(self, is_page=False, subdirectory=None):
+    def cached_items(self, is_page=False, subdirectory=None, reverse=True):
         if is_page:
             key = '_pages'
         else:
@@ -97,12 +97,13 @@ class Builder(object):
 
             items = filter(fn, items)
 
-        items = sorted(items, key=lambda o: o[1], reverse=True)
+        items = sorted(items, key=lambda o: o[1], reverse=reverse)
         return items
 
-    def iters(self, is_page=False, subdirectory=None, count=None):
+    def iters(self, is_page=False, subdirectory=None, reverse=True,
+              count=None):
         """Return an iterator for all posts."""
-        items = self.cached_items(is_page, subdirectory)
+        items = self.cached_items(is_page, subdirectory, reverse)
 
         if count is not None:
             items = items[:count]
