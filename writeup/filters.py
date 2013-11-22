@@ -82,7 +82,10 @@ class HighlightRenderer(AutolinkRenderer):
             formatter = HtmlFormatter(
                 noclasses=inlinestyles, linenos=linenos
             )
-            return highlight(text, lexer, formatter)
+            code = highlight(text, lexer, formatter)
+            if linenos:
+                return '<div class="highlight-wrapper">%s</div>' % code
+            return code
         except:
             return '<pre class="%s"><code>%s</code></pre>' % (
                 lang, escape(text)
