@@ -95,6 +95,8 @@ def permalink(post, style):
             style = style.replace(key, slugify(repl))
         except AttributeError:
             pass
+    # make sure / is flat
+    style = re.sub(r'\/{2,}', '/', style)
     return style
 
 
@@ -132,6 +134,8 @@ class Post(object):
 
     @property
     def id(self):
+        if not self.dirname:
+            return self.filename
         return u'-'.join((self.dirname.replace('/', '-'), self.filename))
 
     @property
@@ -175,7 +179,8 @@ class Post(object):
                     url += '.html'
                 elif style.endswith('/'):
                     url += '/'
-                self.meta['url'] = url
+                # make sure url is flat
+                self.meta['url'] = re.sub(r'\/{2,}', '/', url)
         return self.meta['url']
 
     @property
