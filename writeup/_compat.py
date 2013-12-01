@@ -64,9 +64,9 @@ def to_datetime(value):
         '%Y-%m-%d',
         '%Y%m%d',
     ]
-    for format in supported_formats:
+    for fmt in supported_formats:
         try:
-            return datetime.datetime.strptime(value, format)
+            return datetime.datetime.strptime(value, fmt)
         except ValueError:
             pass
     raise ValueError('Unrecognized date/time: %r' % value)
