@@ -18,20 +18,20 @@ program = Command('writeup', version=writeup.__version__)
 
 
 @program.subcommand
-def build(config='_config.yml', source='.', dest='_site', postdir='_posts',
+def build(config='_config.yml', source='.', dest='_site', postsdir='_posts',
           force=False):
     """Build your site.
 
     :param config: Custom configuration file
     :param source: Source for the site
     :param dest: Output for the destination
-    :param postdir: Specify the post directory
+    :param postsdir: Specify the post directory
     :param force: Ignore cache, force build the site
     """
     from writeup.builder import Builder
     builder = Builder(
         config=config, source=source, sitedir=dest,
-        postdir=postdir, force=force,
+        postsdir=postsdir, force=force,
     )
     builder.build()
 
