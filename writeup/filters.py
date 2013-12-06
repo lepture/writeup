@@ -76,10 +76,6 @@ def gist(link, content=None):
 
 
 def embed(link, width=650, height=366, content=None):
-    html = gist(link, content)
-    if html:
-        return html
-
     src = youtube(link)
     if src:
         return _iframe(src, width, height, content, link)
@@ -155,6 +151,18 @@ class BaseRenderer(m.HtmlRenderer):
 
 
 class HighlightRenderer(BaseRenderer):
+    def autolink(self, link, is_email):
+        html = gist(link)
+        if html:
+            return html
+        return super(HighlightRenderer, self).autolink(link, is_email)
+
+    def link(self, link, title, content):
+        html = gist(link, content)
+        if html:
+            return html
+        return super(HighlightRenderer, self).link(link, title, content)
+
     def block_code(self, text, lang):
         if not lang:
             return u'<pre><code>%s</code></pre>' % escape(text)
@@ -208,9 +216,7 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False):
 
 def xmldatetime(date):
     """Convert a Date into XML Schema RFC3339 format."""
-    time = date.strftime('%Y-%m-%dT%H:%M:%S')
-    tz = date.strftime('%z')
-    return time + tz[:3] + ':' + tz[3:]
+    return date.isoformat('T')
 
 
 word_pattern = re.compile(
