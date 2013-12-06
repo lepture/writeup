@@ -32,6 +32,7 @@ def _iframe(src, width=650, height=365, content=None, link=None):
 
 
 def youtube(link):
+    """Find youtube player URL."""
     pattern = r'http://www\.youtube\.com\/watch\?v=([a-zA-Z0-9\-\_]+)'
     match = re.match(pattern, link)
     if not match:
@@ -43,7 +44,7 @@ def youtube(link):
 
 
 def vimeo(link):
-    #: vimeo.com
+    """Find vimeo player URL."""
     pattern = r'https?:\/\/vimeo\.com\/([\d]+)'
     match = re.match(pattern, link)
     if not match:
@@ -52,7 +53,7 @@ def vimeo(link):
 
 
 def youku(link):
-    #: youku.com
+    """Find youku player URL."""
     pattern = r'http:\/\/v\.youku\.com\/v_show/id_([\w]+)\.html'
     match = re.match(pattern, link)
     if not match:
@@ -61,7 +62,7 @@ def youku(link):
 
 
 def gist(link, content=None):
-    #: gist support
+    """Render gist script."""
     pattern = r'(https?:\/\/gist\.github\.com\/.+\d+)'
     match = re.match(pattern, link)
     if not match:
@@ -137,6 +138,20 @@ class BaseRenderer(m.HtmlRenderer):
         if re.match(pattern, content):
             return '<figure>%s</figure>' % content
         return '<p>%s</p>' % content
+
+    def block_quote(self, content):
+        pattern = r'^--([^<]+)(.*)$'
+        match = re.search(pattern, content, re.M | re.U)
+        if not match:
+            return '<blockquote>%s</blockquote>' % content
+        text = match.group(1).strip()
+        pattern = r'%s$' % match.group(0)
+        content = re.sub(pattern, match.group(2), content)
+        return (
+            '<blockquote class="cite-quote">'
+            '%s<cite>%s</cite>'
+            '</blockquote>'
+        ) % (content, text)
 
 
 class HighlightRenderer(BaseRenderer):
