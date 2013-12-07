@@ -138,10 +138,14 @@ class Builder(object):
         else:
             type = 'post'
         post = parser.read(filepath, type=type, **self.config)
+        if not post:
+            return
         self.cache.set(filepath, post)
         if post.meta.get('status', 'publish') == 'draft':
             return post
-
+        if not is_page and not post.date:
+            # TODO: logging
+            return
         # record tags
         tags = self.cache.get('_tags', {})
         if post.tags:
