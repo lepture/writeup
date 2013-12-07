@@ -9,6 +9,7 @@
 """
 
 import os
+import sys
 import hashlib
 import datetime
 import mimetypes
@@ -52,7 +53,10 @@ class Server(object):
 
     def serve_forever(self, host='0.0.0.0', port=4000):
         print('Start server at http://%s:%s' % (host, port))
-        make_server(host, int(port), self.wsgi).serve_forever()
+        try:
+            make_server(host, int(port), self.wsgi).serve_forever()
+        except KeyboardInterrupt:
+            sys.exit()
 
     def wsgi(self, environ, start_response):
         path = environ['PATH_INFO']
