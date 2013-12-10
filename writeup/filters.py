@@ -67,7 +67,7 @@ def gist(link, content=None):
     match = re.match(pattern, link)
     if not match:
         return None
-    html = '<script src="%(link)s.js"></script>' % match.group(1)
+    html = '<script src="%s.js"></script>' % match.group(1)
     if not content:
         return html
     return '<figure>%s<figcaption>%s</figcaption></figure>' % (
