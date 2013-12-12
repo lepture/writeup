@@ -49,7 +49,7 @@ class Builder(object):
         jinja = create_jinja(**config)
         site = config.copy()
 
-        site['posts'] = self.iters
+        site['posts'] = self.posts
         site['tags'] = lambda: self.cache.get('_tags', {})
 
         tz = pytz.timezone(config.get('timezone', 'Asia/Chongqing'))
@@ -100,7 +100,7 @@ class Builder(object):
         items = sorted(items, key=lambda o: o[1], reverse=reverse)
         return items
 
-    def iters(self, is_page=False, subdirectory=None, reverse=True,
+    def posts(self, is_page=False, subdirectory=None, reverse=True,
               count=None):
         """Return an iterator for all posts."""
         items = self.cached_items(is_page, subdirectory, reverse)
@@ -112,20 +112,7 @@ class Builder(object):
         item_count = len(keys)
 
         for i, k in enumerate(keys):
-            post = self.cache.get(k)
-
-            if not is_page:
-                if i > 0:
-                    post.previous = self.cache.get(keys[i-1])
-                else:
-                    post.previous = None
-
-                if i < item_count - 1:
-                    post.next = self.cache.get(keys[i+1])
-                else:
-                    post.next = None
-
-            yield post
+            yield self.cache.get(k)
 
     def read(self, filepath, is_page=False):
         """Read and index a single post."""
@@ -200,7 +187,8 @@ class Builder(object):
 
         dest = os.path.join(self.sitedir, dest.lstrip('/'))
 
-        if not self.config.get('force') and os.path.exists(dest):
+        if not post.nocache and not self.config.get('force')\
+           and os.path.exists(dest):
             post_time = os.path.getmtime(post.filepath)
             dest_time = os.path.getmtime(dest)
             if max(self.jinja._last_updated, post_time) < dest_time:
@@ -215,12 +203,12 @@ class Builder(object):
 
     def build_posts(self):
         """Build posts to HTML."""
-        for post in self.iters():
+        for post in self.posts():
             self.write(post)
 
     def build_pages(self):
         """Build pages to HTML."""
-        for post in self.iters(is_page=True):
+        for post in self.posts(is_page=True):
             self.write(post, is_page=True)
 
     def build_files(self):
