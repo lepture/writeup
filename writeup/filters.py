@@ -231,9 +231,28 @@ def wordcount(data):
     ret = word_pattern.findall(data)
     count = 0
     for s in ret:
-        if ord(s[0]) >= 12352:
+        if ord(s[0]) >= 0x4e00:
             # this is cjk
             count += len(s)
         else:
             count += 1
     return count
+
+
+def linguist(data):
+    """Language detection.
+
+    Currently only support English and Chinese.
+    """
+    ret = word_pattern.findall(data)
+    chinese = 0
+    english = 0
+    for s in ret:
+        if ord(s[0]) >= 0x4e00:
+            chinese += len(s)
+        else:
+            english += 1
+
+    if float(chinese) / (chinese + english) > 0.2:
+        return 'zh'
+    return 'en'
