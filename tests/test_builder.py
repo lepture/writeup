@@ -25,7 +25,7 @@ class TestBuilder(object):
 
     def test_load_posts(self):
         self.builder.load_posts()
-        assert len(list(self.builder.iters())) > 0
+        assert len(list(self.builder.posts())) > 0
 
     def test_build(self):
         self.builder.build()
