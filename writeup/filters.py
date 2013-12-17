@@ -253,6 +253,6 @@ def linguist(data):
         else:
             english += 1
 
-    if float(chinese) / (chinese + english) > 0.2:
+    if float(chinese) / (chinese + english) > 0.26:
         return 'zh'
     return 'en'
