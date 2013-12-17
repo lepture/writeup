@@ -54,7 +54,7 @@ def vimeo(link):
 
 def youku(link):
     """Find youku player URL."""
-    pattern = r'http:\/\/v\.youku\.com\/v_show/id_([\w]+)\.html'
+    pattern = r'http:\/\/v\.youku\.com\/v_show\/id_([\w]+)\.html'
     match = re.match(pattern, link)
     if not match:
         return None
