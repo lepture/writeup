@@ -37,14 +37,29 @@ def build(config='_config.yml', source='.', dest='_site', postsdir='_posts',
 
 
 @program.subcommand
-def serve(sitedir='_site', host='0.0.0.0', port=4000):
+def serve(config='_config.yml', source='.', dest='_site',
+          postsdir='_posts', sitedir='_site', force=False,
+          host='0.0.0.0', port=4000):
     """Start a preview server.
 
+    :param config: Custom configuration file
+    :param source: Source for the site
+    :param dest: Output for the destination
+    :param postsdir: Specify the post directory
     :param sitedir: serve the sitedir as the source root
     :param host: define server hostname
     :param port: define server port
+    :param force: Ignore cache, force build the site
     """
+    from writeup.builder import Builder
     from writeup.server import Server
+
+    builder = Builder(
+        config=config, source=source, sitedir=dest,
+        postsdir=postsdir, force=force,
+    )
+    builder.build()
+
     server = Server(sitedir)
     try:
         server.serve_forever(host, port)
