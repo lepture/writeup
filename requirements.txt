@@ -1,0 +1,6 @@
+misaka
+Jinja2
+Pygments
+PyYAML
+pytz
+terminal
