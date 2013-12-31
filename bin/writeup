@@ -59,13 +59,20 @@ def serve(config='_config.yml', source='.', dest='_site',
         postsdir=postsdir, force=force,
     )
     builder.build()
-
     server = Server(sitedir)
+
     try:
-        server.serve_forever(host, port)
-    except KeyboardInterrupt:
-        print('\rShut down.')
-        sys.exit()
+        from livereload import Server as LiveServer
+
+        liveserver = LiveServer(server.wsgi)
+        liveserver.watch(postsdir, builder.build)
+        liveserver.serve(port=port)
+    except ImportError:
+        try:
+            server.serve_forever(host, port)
+        except KeyboardInterrupt:
+            print('\rShut down.')
+            sys.exit()
 
 
 program.parse()
