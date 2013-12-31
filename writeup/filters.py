@@ -136,18 +136,15 @@ class BaseRenderer(m.HtmlRenderer):
         return '<p>%s</p>' % content
 
     def block_quote(self, content):
-        pattern = r'^--([^<]+)(.*)$'
+        pattern = r'<p>--\s*([^<]+)<\/p>$'
         match = re.search(pattern, content, re.M | re.U)
         if not match:
             return '<blockquote>%s</blockquote>' % content
         text = match.group(1).strip()
         pattern = r'%s$' % match.group(0)
-        content = re.sub(pattern, match.group(2), content)
-        return (
-            '<blockquote class="cite-quote">'
-            '%s<cite>%s</cite>'
-            '</blockquote>'
-        ) % (content, text)
+        cite = '<cite>%s</cite>' % text
+        content = re.sub(pattern, cite, content, flags=re.M)
+        return '<blockquote class="cite-quote">%s</blockquote>' % content
 
 
 class HighlightRenderer(BaseRenderer):
