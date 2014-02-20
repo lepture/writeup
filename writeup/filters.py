@@ -225,6 +225,8 @@ word_pattern = re.compile(
 
 def wordcount(data):
     """Word count for ASCII and CJK."""
+    if not data:
+        return 0
     ret = word_pattern.findall(data)
     count = 0
     for s in ret:
@@ -241,6 +243,8 @@ def linguist(data):
 
     Currently only support English and Chinese.
     """
+    if not data:
+        return 'en'
     ret = word_pattern.findall(data)
     chinese = 0
     english = 0

@@ -75,4 +75,5 @@ def serve(config='_config.yml', source='.', dest='_site',
             sys.exit()
 
 
-program.parse()
+if not program.parse():
+    program.print_help()

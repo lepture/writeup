@@ -24,7 +24,10 @@ def read(filepath, **kwargs):
     with open(filepath, 'r') as f:
         content = f.read()
 
-    meta, body = parse(content)
+    try:
+        meta, body = parse(content)
+    except:
+        return None
 
     if 'status' in meta and meta['status'] == 'draft':
         return None
