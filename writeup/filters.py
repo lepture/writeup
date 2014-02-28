@@ -9,7 +9,7 @@
 """
 
 import re
-import misaka as m
+import mistune as m
 from markupsafe import escape
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name
@@ -88,7 +88,7 @@ def embed(link, width=650, height=366, content=None):
     return None
 
 
-class BaseRenderer(m.HtmlRenderer):
+class BaseRenderer(m.Renderer):
     def autolink(self, link, is_email):
         if is_email:
             return '<a href="mailto:%(link)s">%(link)s</a>' % {'link': link}
@@ -132,12 +132,12 @@ class BaseRenderer(m.HtmlRenderer):
         # a single image in this paragraph
         pattern = r'^<img[^>]+>$'
         if re.match(pattern, content):
-            return '<figure>%s</figure>' % content
-        return '<p>%s</p>' % content
+            return '<figure>%s</figure>\n' % content
+        return '<p>%s</p>\n' % content
 
     def block_quote(self, content):
-        pattern = r'<p>--\s*([^<]+)<\/p>$'
-        match = re.search(pattern, content, re.M | re.U)
+        pattern = ur'<p>(?:--|\u2014)\s*([^<]+)<\/p>$'
+        match = re.search(pattern, content, re.U)
         if not match:
             return '<blockquote>%s</blockquote>' % content
         text = match.group(1).strip()
@@ -162,7 +162,8 @@ class HighlightRenderer(BaseRenderer):
 
     def block_code(self, text, lang):
         if not lang:
-            return u'<pre><code>%s</code></pre>' % escape(text)
+            text = text.strip()
+            return u'<pre><code>%s</code></pre>\n' % escape(text)
 
         inlinestyles = False
         linenos = False
@@ -178,10 +179,10 @@ class HighlightRenderer(BaseRenderer):
             )
             code = highlight(text, lexer, formatter)
             if linenos:
-                return '<div class="highlight-wrapper">%s</div>' % code
+                return '<div class="highlight-wrapper">%s</div>\n' % code
             return code
         except:
-            return '<pre class="%s"><code>%s</code></pre>' % (
+            return '<pre class="%s"><code>%s</code></pre>\n' % (
                 lang, escape(text)
             )
 
@@ -203,11 +204,7 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False):
     else:
         renderer = BaseRenderer()
 
-    extensions = (
-        m.EXT_NO_INTRA_EMPHASIS | m.EXT_FENCED_CODE | m.EXT_AUTOLINK |
-        m.EXT_TABLES | m.EXT_STRIKETHROUGH | m.EXT_SUPERSCRIPT
-    )
-    md = m.Markdown(renderer, extensions=extensions)
+    md = m.Markdown(renderer)
     return md.render(text)
 
 
