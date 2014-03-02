@@ -108,11 +108,8 @@ class Builder(object):
         if count is not None:
             items = items[:count]
 
-        keys = [o[0] for o in items]
-        item_count = len(keys)
-
-        for i, k in enumerate(keys):
-            yield self.cache.get(k)
+        for item in items:
+            yield self.cache.get(item[0])
 
     def read(self, filepath, is_page=False):
         """Read and index a single post."""
