@@ -37,7 +37,7 @@ setup(
     long_description=fread('README.rst'),
     license='BSD',
     install_requires=[
-        'misaka',
+        'mistune',
         'Jinja2',
         'Pygments',
         'PyYAML',
