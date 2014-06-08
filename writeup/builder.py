@@ -155,6 +155,24 @@ class Builder(object):
             else:
                 self.cache.add('_post_files', filepath)
 
+    def recursive_meta(self, filepath):
+        """Merge configuration recursively."""
+        key = '_meta_%s' % filepath
+        config = self.cache.get(key, None)
+        if config is None:
+            names = filepath.split(os.path.sep)
+            names.reverse()
+            dest = self.source
+            config = {}
+            while names:
+                name = names.pop()
+                dest = os.path.join(dest, name)
+                config_file = os.path.join(dest, '_meta.yml')
+                if os.path.isfile(config_file):
+                    config.update(load_config(config_file))
+            self.cache.set(key, config)
+        return config
+
     def load_pages(self):
         includes = set(self.config.get('includes', []))
         excludes = set(self.config.get('excludes', []))
@@ -192,6 +210,15 @@ class Builder(object):
             if max(self.jinja._last_updated, post_time) < dest_time:
                 # this is an old post
                 return
+
+        # merge meta to post
+        dirname = os.path.dirname(
+            os.path.relpath(post.filepath, self.source)
+        )
+        config = self.recursive_meta(dirname)
+        for key in config:
+            if getattr(post, key) is None:
+                setattr(post, key, config[key])
 
         params = {'page': post}
         template = post.template or 'post.html'
