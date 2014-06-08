@@ -213,60 +213,14 @@ class Builder(object):
 
         sitedir = self.sitedir
 
-        def build_html(filepath, dest):
-            with open(filepath, 'r') as f:
-                tpl = self.jinja.from_string(to_unicode(f.read()))
-            content = tpl.render()
-            fwrite(dest, content)
-
-        def build_paginator(filepath, dest):
-            with open(filepath, 'r') as f:
-                tpl = self.jinja.from_string(to_unicode(f.read()))
-
-            relpath = os.path.relpath(filepath, self.postsdir)
-            dirname = os.path.dirname(relpath) or None
-
-            root = os.path.relpath(dest, self.sitedir)
-            root = re.sub(r'index.html$', '', root)
-            root = root.replace('\\', '/')
-            if root == '.':
-                root = '/'
-            else:
-                root = '/' + root
-
-            items = self.cached_items(subdirectory=dirname)
-            paginator = Paginator(items, 1)
-            paginator.per_page = self.config.get('per_page', 100)
-            paginator._style = self.config.get(
-                'paginator_style', 'page-:num'
-            )
-            paginator._root = root
-            paginator._cache = self.cache
-
-            # write current paginator
-            content = tpl.render({'paginator': paginator})
-            fwrite(dest, content)
-
-            if paginator.pages > 1:
-                for i in range(2, paginator.pages + 1):
-                    paginator.page = i
-                    url = paginator._style.replace(':num', str(i))
-                    if url.endswith('/'):
-                        url += 'index.html'
-                    elif not url.endswith('.html'):
-                        url += '.html'
-                    new_dest = re.sub(r'index.html$', url, dest)
-                    content = tpl.render({'paginator': paginator})
-                    fwrite(new_dest, content)
-
         for filepath in self.cache.get('_post_files') or ():
             name = os.path.relpath(filepath, self.postsdir)
             dest = os.path.join(sitedir, name)
 
             if filepath.endswith('/index.html'):
-                build_paginator(filepath, dest)
+                self.build_paginator(filepath, dest)
             elif is_html(filepath):
-                build_html(filepath, dest)
+                self.build_html(filepath, dest)
             else:
                 fcopy(filepath, dest)
 
@@ -274,9 +228,55 @@ class Builder(object):
             name = os.path.relpath(filepath, self.source)
             dest = os.path.join(sitedir, name)
             if is_html(filepath):
-                build_html(filepath, dest)
+                self.build_html(filepath, dest)
             else:
                 fcopy(filepath, dest)
+
+    def build_html(self, filepath, dest):
+        with open(filepath, 'r') as f:
+            tpl = self.jinja.from_string(to_unicode(f.read()))
+        content = tpl.render()
+        fwrite(dest, content)
+
+    def build_paginator(self, filepath, dest):
+        with open(filepath, 'r') as f:
+            tpl = self.jinja.from_string(to_unicode(f.read()))
+
+        relpath = os.path.relpath(filepath, self.postsdir)
+        dirname = os.path.dirname(relpath) or None
+
+        root = os.path.relpath(dest, self.sitedir)
+        root = re.sub(r'index.html$', '', root)
+        root = root.replace('\\', '/')
+        if root == '.':
+            root = '/'
+        else:
+            root = '/' + root
+
+        items = self.cached_items(subdirectory=dirname)
+        paginator = Paginator(items, 1)
+        paginator.per_page = self.config.get('per_page', 100)
+        paginator._style = self.config.get(
+            'paginator_style', 'page-:num'
+        )
+        paginator._root = root
+        paginator._cache = self.cache
+
+        # write current paginator
+        content = tpl.render({'paginator': paginator})
+        fwrite(dest, content)
+
+        if paginator.pages > 1:
+            for i in range(2, paginator.pages + 1):
+                paginator.page = i
+                url = paginator._style.replace(':num', str(i))
+                if url.endswith('/'):
+                    url += 'index.html'
+                elif not url.endswith('.html'):
+                    url += '.html'
+                new_dest = re.sub(r'index.html$', url, dest)
+                content = tpl.render({'paginator': paginator})
+                fwrite(new_dest, content)
 
     def build(self):
         self.load_posts()
