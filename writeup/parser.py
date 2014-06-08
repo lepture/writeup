@@ -14,7 +14,7 @@ import re
 import pytz
 import yaml
 import unicodedata
-import misaka as m
+import mistune as m
 from ._compat import to_unicode, to_datetime
 
 
@@ -50,7 +50,7 @@ def parse_meta(text):
     The meta part contains title, info, and description.
     """
     meta = {}
-    html = m.html(text)
+    html = m.markdown(text)
     titles = re.findall(r'^<h1>(.*)</h1>', html)
     if not titles:
         meta[u'title'] = None
