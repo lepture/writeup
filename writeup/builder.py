@@ -150,6 +150,10 @@ class Builder(object):
     def load_posts(self):
         """Load and parse posts in post directory."""
         for filepath in fwalk(self.postsdir):
+            purepath = os.path.relpath(filepath, self.postsdir)
+            names = purepath.split(os.path.sep)
+            if any(map(lambda o: o[0] in ('.', '_'), names)):
+                continue
             if is_markdown(filepath):
                 self.read(filepath)
             else:
