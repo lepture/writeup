@@ -85,3 +85,61 @@ def is_html(filepath):
         if filepath.endswith(ext):
             return True
     return False
+
+
+class Paginator(object):
+    """Paginator generator."""
+
+    _cache = None
+    _style = 'page-:num'
+    _root = '/'
+
+    per_page = 100
+
+    def __init__(self, items, page):
+        self.items = items
+        self.page = page
+
+    @property
+    def total(self):
+        return len(self.items)
+
+    @property
+    def pages(self):
+        return int((self.total - 1) / self.per_page) + 1
+
+    @property
+    def has_prev(self):
+        return self.page > 1
+
+    @property
+    def prev_num(self):
+        return self.page - 1
+
+    @property
+    def prev_url(self):
+        if self.prev_num == 1:
+            return self._root
+        ret = self._style.replace(':num', str(self.prev_num))
+        return self._root + ret
+
+    @property
+    def has_next(self):
+        return self.page < self.pages
+
+    @property
+    def next_num(self):
+        return self.page + 1
+
+    @property
+    def next_url(self):
+        ret = self._style.replace(':num', str(self.next_num))
+        return self._root + ret
+
+    @property
+    def posts(self):
+        start = (self.page - 1) * self.per_page
+        end = self.page * self.per_page
+        items = self.items[start:end]
+        for k, _ in items:
+            yield self._cache.get(k)

@@ -19,6 +19,7 @@ from .cache import Cache
 from ._compat import to_unicode
 from .utils import is_markdown, is_subdir, is_html
 from .utils import fwrite, fcopy, fwalk
+from .utils import Paginator
 
 
 class Builder(object):
@@ -31,7 +32,7 @@ class Builder(object):
         if not os.path.exists(filepath):
             raise RuntimeError('Config file is missing.')
 
-        config = load_config(filepath)
+        config = default_config(filepath)
         config.update(kwargs)
 
         self.source = os.path.abspath(config.get('source', '.'))
@@ -296,8 +297,12 @@ def load_config(filepath='_config.yml'):
         from yaml import Loader
 
     with open(filepath, 'r') as f:
-        config = load(f, Loader)
+        return load(f, Loader)
 
+
+def default_config(filepath='_config.yml'):
+    """Create default configuration for writeup."""
+    config = load_config(filepath)
     config.setdefault('postsdir', '_posts')
     config.setdefault('sitedir', '_site')
     config.setdefault('permalink', '/:year/:filename.html')
@@ -343,61 +348,3 @@ def create_jinja(**kwargs):
 
     jinja._last_updated = max((os.path.getmtime(d) for d in loaders))
     return jinja
-
-
-class Paginator(object):
-    """Paginator generator."""
-
-    _cache = None
-    _style = 'page-:num'
-    _root = '/'
-
-    per_page = 100
-
-    def __init__(self, items, page):
-        self.items = items
-        self.page = page
-
-    @property
-    def total(self):
-        return len(self.items)
-
-    @property
-    def pages(self):
-        return int((self.total - 1) / self.per_page) + 1
-
-    @property
-    def has_prev(self):
-        return self.page > 1
-
-    @property
-    def prev_num(self):
-        return self.page - 1
-
-    @property
-    def prev_url(self):
-        if self.prev_num == 1:
-            return self._root
-        ret = self._style.replace(':num', str(self.prev_num))
-        return self._root + ret
-
-    @property
-    def has_next(self):
-        return self.page < self.pages
-
-    @property
-    def next_num(self):
-        return self.page + 1
-
-    @property
-    def next_url(self):
-        ret = self._style.replace(':num', str(self.next_num))
-        return self._root + ret
-
-    @property
-    def posts(self):
-        start = (self.page - 1) * self.per_page
-        end = self.page * self.per_page
-        items = self.items[start:end]
-        for k, _ in items:
-            yield self._cache.get(k)
