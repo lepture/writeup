@@ -90,7 +90,7 @@ def test_vimeo_link():
 
 
 def test_auto_email():
-    html = filters.markdown('hello me@lepture.com')
+    html = filters.markdown('hello <me@lepture.com>')
     assert 'mailto' in html
 
 
@@ -146,6 +146,7 @@ def test_block_quote():
 
     html = filters.markdown(
         '> Hello World\n'
+        '>\n'
         '> -- lepture\n'
     )
     assert 'cite-quote' in html
