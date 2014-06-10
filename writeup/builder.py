@@ -35,13 +35,9 @@ class Builder(object):
         config = default_config(filepath)
         config.update(kwargs)
 
-        self.source = os.path.abspath(config.get('source', '.'))
-        self.postsdir = os.path.join(
-            self.source, config.get('postsdir', '_posts')
-        )
-        self.sitedir = os.path.join(
-            self.source, config.get('sitedir', '_site')
-        )
+        self.basedir = os.path.abspath(config.get('basedir'))
+        self.postsdir = os.path.abspath(config.get('postsdir'))
+        self.sitedir = os.path.abspath(config.get('sitedir'))
         self.config = config
 
         self.cache = Cache(config.get('cachedir', None))
@@ -71,7 +67,7 @@ class Builder(object):
         value = self.cache.get(key)
 
         if not value:
-            abspath = os.path.join(self.source, filepath)
+            abspath = os.path.join(self.basedir, filepath)
             with open(abspath, 'r') as f:
                 content = f.read()
             value = hashlib.md5(content).hexdigest()[:5]
@@ -88,7 +84,7 @@ class Builder(object):
 
         if subdirectory:
             # filter subdirectory
-            subdir = os.path.join(self.source, subdirectory)
+            subdir = os.path.join(self.basedir, subdirectory)
             if is_page:
                 fn = lambda o: is_subdir(o[0], subdir)
             else:
@@ -164,7 +160,7 @@ class Builder(object):
         if config is None:
             names = filepath.split(os.path.sep)
             names.reverse()
-            dest = self.source
+            dest = self.basedir
             config = {}
             while names:
                 name = names.pop()
@@ -184,7 +180,7 @@ class Builder(object):
         if '_layouts' in includes:
             includes.remove('_layouts')
 
-        for filepath in fwalk(self.source, includes, excludes):
+        for filepath in fwalk(self.basedir, includes, excludes):
             if is_markdown(filepath):
                 self.read(filepath, 'page')
             else:
@@ -193,7 +189,7 @@ class Builder(object):
     def write(self, post, is_page=False):
         """Write a single post into HTML."""
         if is_page:
-            dest = os.path.relpath(post.filepath, self.source)
+            dest = os.path.relpath(post.filepath, self.basedir)
             dest = os.path.splitext(dest)[0] + '.html'
         else:
             if post.url.endswith('/'):
@@ -215,7 +211,7 @@ class Builder(object):
 
         # merge meta to post
         dirname = os.path.dirname(
-            os.path.relpath(post.filepath, self.source)
+            os.path.relpath(post.filepath, self.basedir)
         )
         config = self.recursive_meta(dirname)
         for key in config:
@@ -255,7 +251,7 @@ class Builder(object):
                 fcopy(filepath, dest)
 
         for filepath in self.cache.get('_page_files') or ():
-            name = os.path.relpath(filepath, self.source)
+            name = os.path.relpath(filepath, self.basedir)
             if is_ignore_file(name):
                 continue
             dest = os.path.join(sitedir, name)
@@ -334,8 +330,9 @@ def load_config(filepath='_config.yml'):
 def default_config(filepath='_config.yml'):
     """Create default configuration for writeup."""
     config = load_config(filepath)
-    config.setdefault('postsdir', '_posts')
-    config.setdefault('sitedir', '_site')
+    config.setdefault('basedir', os.path.abspath('.'))
+    config.setdefault('postsdir', os.path.abspath('_posts'))
+    config.setdefault('sitedir', os.path.abspath('_site'))
     config.setdefault('permalink', '/:year/:filename.html')
     config.setdefault('excludes', [filepath])
     return config
