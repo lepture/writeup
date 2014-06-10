@@ -87,6 +87,12 @@ def is_html(filepath):
     return False
 
 
+def is_ignore_file(filepath):
+    ignores = ('.', '_')
+    names = filepath.split(os.path.sep)
+    return any(map(lambda o: o[0] in ignores, names))
+
+
 class Paginator(object):
     """Paginator generator."""
 

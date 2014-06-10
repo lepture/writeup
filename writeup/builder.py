@@ -18,7 +18,7 @@ from . import parser
 from .cache import Cache
 from ._compat import to_unicode
 from .utils import is_markdown, is_subdir, is_html
-from .utils import fwrite, fcopy, fwalk
+from .utils import fwrite, fcopy, fwalk, is_ignore_file
 from .utils import Paginator
 
 
@@ -150,9 +150,7 @@ class Builder(object):
     def load_posts(self):
         """Load and parse posts in post directory."""
         for filepath in fwalk(self.postsdir):
-            purepath = os.path.relpath(filepath, self.postsdir)
-            names = purepath.split(os.path.sep)
-            if any(map(lambda o: o[0] in ('.', '_'), names)):
+            if is_ignore_file(os.path.relpath(filepath, self.postsdir)):
                 continue
             if is_markdown(filepath):
                 self.read(filepath)
@@ -258,6 +256,8 @@ class Builder(object):
 
         for filepath in self.cache.get('_page_files') or ():
             name = os.path.relpath(filepath, self.source)
+            if is_ignore_file(name):
+                continue
             dest = os.path.join(sitedir, name)
             if is_html(filepath):
                 self.build_html(filepath, dest)
