@@ -17,6 +17,8 @@ import unicodedata
 import mistune as m
 from ._compat import to_unicode, to_datetime
 
+rules = m.BlockGrammar()
+
 
 def read(filepath, **kwargs):
     """Read a file and parse it to a post."""
@@ -47,25 +49,35 @@ def parse(text):
 def parse_meta(text):
     """Parse the meta part of an article.
 
-    The meta part contains title, info, and description.
+    The meta part contains title, info, and description
     """
     meta = {}
-    html = m.markdown(text)
-    titles = re.findall(r'^<h1>(.*)</h1>', html)
-    if not titles:
-        meta[u'title'] = None
+
+    # parse title
+    m = rules.heading.match(text)
+    if m:
+        title = m.group(2)
+        text = text[len(m.group(0)):]
     else:
-        meta[u'title'] = titles[0]
+        m = rules.lheading.match(text)
+        if m:
+            title = m.group(1)
+            text = text[len(m.group(0)):]
+        else:
+            title = None
+    meta['title'] = title
 
-    items = re.findall(r'<li>(.*?)</li>', html, re.S)
-    for item in items:
-        key, value = item.split(':', 1)
-        meta[key.rstrip()] = yaml.load(value.lstrip())
+    # parse meta data
+    m = rules.list_block.match(text)
+    if m:
+        values = yaml.load(m.group(0))
+        for item in values:
+            for key in item:
+                meta[key] = item[key]
+        text = text[len(m.group(0)):]
 
-    desc = re.findall(r'<p>(.*?)</p>', html, re.S)
-    if desc:
-        meta[u'description'] = '\n\n'.join(desc)
-
+    # the rest part is the description
+    meta['description'] = text
     return meta
 
 
