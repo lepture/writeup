@@ -118,7 +118,10 @@ class BaseRenderer(m.Renderer):
         return html
 
     def image(self, link, title, alt_text):
-        html = '<img src="%s" alt="%s" />' % (link, alt_text)
+        if hasattr(self, '_lazyimg') and self._lazyimg:
+            html = '<img data-src="%s" alt="%s" />' % (link, alt_text)
+        else:
+            html = '<img src="%s" alt="%s" />' % (link, alt_text)
         if not title:
             return html
         return '<figure>%s<figcaption>%s</figcaption></figure>' % (
@@ -187,7 +190,12 @@ class HighlightRenderer(BaseRenderer):
             )
 
 
-def markdown(text, highlight=True, inlinestyles=False, linenos=False):
+_base_renderer = BaseRenderer()
+_highlight_renderer = HighlightRenderer()
+
+
+def markdown(text, highlight=True, inlinestyles=False, linenos=False,
+             lazyimg=False):
     """Markdown filter for writeup.
 
     :param text: the content to be markdownify
@@ -198,12 +206,13 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False):
     if not text:
         return u''
     if highlight:
-        renderer = HighlightRenderer()
+        renderer = _highlight_renderer
         renderer._inlinestyles = inlinestyles
         renderer._linenos = linenos
     else:
-        renderer = BaseRenderer()
+        renderer = _base_renderer
 
+    renderer._lazyimg = lazyimg
     md = m.Markdown(renderer)
     return md.render(text)
 
