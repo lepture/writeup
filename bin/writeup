@@ -18,8 +18,8 @@ program = Command('writeup', version=writeup.__version__)
 
 
 @program.subcommand
-def build(config='_config.yml', source='.', dest='_site', postsdir='_posts',
-          force=False):
+def build(config='_config.yml', source='.', dest='_site',
+          postsdir='_posts', force=False):
     """Build your site.
 
     :param config: Custom configuration file
@@ -38,15 +38,13 @@ def build(config='_config.yml', source='.', dest='_site', postsdir='_posts',
 
 @program.subcommand
 def serve(config='_config.yml', source='.', dest='_site',
-          postsdir='_posts', sitedir='_site', force=False,
-          host='0.0.0.0', port=4000):
+          postsdir='_posts', force=False, host='0.0.0.0', port=4000):
     """Start a preview server.
 
     :param config: Custom configuration file
     :param source: Source for the site
     :param dest: Output for the destination
     :param postsdir: Specify the post directory
-    :param sitedir: serve the sitedir as the source root
     :param host: define server hostname
     :param port: define server port
     :param force: Ignore cache, force build the site
@@ -59,7 +57,7 @@ def serve(config='_config.yml', source='.', dest='_site',
         postsdir=postsdir, force=force,
     )
     builder.build()
-    server = Server(sitedir)
+    server = Server(dest)
 
     try:
         from livereload import Server as LiveServer
