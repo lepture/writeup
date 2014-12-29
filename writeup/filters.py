@@ -76,15 +76,11 @@ def gist(link, content=None):
 
 
 def embed(link, width=650, height=366, content=None):
-    src = youtube(link)
-    if src:
-        return _iframe(src, width, height, content, link)
-    src = vimeo(link)
-    if src:
-        return _iframe(src, width, height, content, link)
-    src = youku(link)
-    if src:
-        return _iframe(src, width, height, content, link)
+    for fn in [youtube, vimeo, youku]:
+        if fn.__name__ in link:
+            src = fn(link)
+            if src:
+                return _iframe(src, width, height, content, link)
     return None
 
 

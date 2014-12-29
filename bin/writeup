@@ -9,17 +9,45 @@
     :copyright: (c) 2013 Hsiaoming Yang
 """
 
+import os
 import sys
+import time
 import writeup
+import logging
+import datetime
+from terminal import color
 from terminal.builtin import Command
 
 
 program = Command('writeup', version=writeup.__version__)
+logger = logging.getLogger('writeup')
+
+class WriteupHandler(logging.Handler):
+    cwd = os.getcwd() + '/'
+
+    def emit(self, record):
+        msg = record.msg.replace(self.cwd, '')
+        now = datetime.datetime.now()
+        time = now.strftime('%H:%M:%S')
+        std = sys.stdout
+        if record.levelname == 'INFO':
+            time = color.green(time)
+        elif record.levelname == 'DEBUG':
+            time = color.magenta(time)
+        elif record.levelname == 'WARN':
+            time = color.yellow(time)
+        elif record.levelname == 'ERROR':
+            time = color.red(time)
+            std = sys.stderr
+        output = '  %s: %s\n' % (time, msg)
+        std.write(output)
+
+logger.addHandler(WriteupHandler())
 
 
 @program.subcommand
 def build(config='_config.yml', source='.', dest='_site',
-          postsdir='_posts', force=False):
+          postsdir='_posts', force=False, verbose=False):
     """Build your site.
 
     :param config: Custom configuration file
@@ -27,43 +55,62 @@ def build(config='_config.yml', source='.', dest='_site',
     :param dest: Output for the destination
     :param postsdir: Specify the post directory
     :param force: Ignore cache, force build the site
+    :param verbose: Show verbose logging
     """
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
     from writeup.builder import Builder
     builder = Builder(
         config=config, source=source, sitedir=dest,
         postsdir=postsdir, force=force,
     )
+    begin = time.time()
     builder.build()
+    delta = (time.time() - begin) * 1000
+    print('  Finish in %s ms' % color.cyan(str(int(delta))))
 
 
 @program.subcommand
-def serve(config='_config.yml', source='.', dest='_site',
-          postsdir='_posts', force=False, host='0.0.0.0', port=4000):
+def serve(config='_config.yml', source='.', dest='_site', postsdir='_posts',
+          force=False, host='0.0.0.0', port=4000, build=True, verbose=False):
     """Start a preview server.
 
     :param config: Custom configuration file
     :param source: Source for the site
     :param dest: Output for the destination
     :param postsdir: Specify the post directory
-    :param host: define server hostname
-    :param port: define server port
+    :param host: Define server hostname
+    :param port: Define server port
     :param force: Ignore cache, force build the site
+    :param build: Enable build in server
+    :param verbose: Show verbose logging
     """
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
     from writeup.builder import Builder
     from writeup.server import Server
 
-    builder = Builder(
-        config=config, source=source, sitedir=dest,
-        postsdir=postsdir, force=force,
-    )
-    builder.build()
+    if build:
+        builder = Builder(
+            config=config, source=source, sitedir=dest,
+            postsdir=postsdir, force=force,
+        )
+        builder.build()
+        watch = builder.build
+    else:
+        watch = None
     server = Server(dest)
 
     try:
         from livereload import Server as LiveServer
 
         liveserver = LiveServer(server.wsgi)
-        liveserver.watch(postsdir, builder.build)
+        liveserver.watch(postsdir, None)
         liveserver.serve(port=port)
     except ImportError:
         try:

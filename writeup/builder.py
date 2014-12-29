@@ -14,12 +14,15 @@ import re
 import pytz
 import hashlib
 import datetime
+import logging
 from . import parser
 from .cache import Cache
 from ._compat import to_unicode
 from .utils import is_markdown, is_subdir, is_html
 from .utils import fwrite, fcopy, fwalk, is_ignore_file
 from .utils import Paginator
+
+logger = logging.getLogger('writeup')
 
 
 class Builder(object):
@@ -125,7 +128,7 @@ class Builder(object):
         if post.meta.get('status', 'publish') == 'draft':
             return post
         if not is_page and not post.date:
-            # TODO: logging
+            logger.warn('Invalid %s' % filepath)
             return
         # record tags
         tags = self.cache.get('_tags', {})
@@ -145,12 +148,16 @@ class Builder(object):
 
     def load_posts(self):
         """Load and parse posts in post directory."""
+        logger.info('Loading posts')
         for filepath in fwalk(self.postsdir):
             if is_ignore_file(os.path.relpath(filepath, self.postsdir)):
+                logger.debug('Ignore %s' % filepath)
                 continue
             if is_markdown(filepath):
+                logger.debug('Post %s' % filepath)
                 self.read(filepath)
             else:
+                logger.debug('File %s' % filepath)
                 self.cache.add('_post_files', filepath)
 
     def recursive_meta(self, filepath):
@@ -172,6 +179,7 @@ class Builder(object):
         return config
 
     def load_pages(self):
+        logger.info('Loading pages')
         includes = set(self.config.get('includes', []))
         excludes = set(self.config.get('excludes', []))
         postsdir = self.config.get('postsdir', '_posts')
@@ -182,8 +190,10 @@ class Builder(object):
 
         for filepath in fwalk(self.basedir, includes, excludes):
             if is_markdown(filepath):
+                logger.debug('Page %s' % filepath)
                 self.read(filepath, 'page')
             else:
+                logger.debug('File %s' % filepath)
                 self.cache.add('_page_files', filepath)
 
     def write(self, post, is_page=False):
@@ -209,6 +219,7 @@ class Builder(object):
                 # this is an old post
                 return
 
+        logger.debug('Write %s -> %s' % (post.title, dest))
         # merge meta to post
         dirname = os.path.dirname(
             os.path.relpath(post.filepath, self.basedir)
@@ -226,17 +237,19 @@ class Builder(object):
 
     def build_posts(self):
         """Build posts to HTML."""
+        logger.info('Building posts')
         for post in self.posts():
             self.write(post)
 
     def build_pages(self):
         """Build pages to HTML."""
+        logger.info('Building pages')
         for post in self.posts(is_page=True):
             self.write(post, is_page=True)
 
     def build_files(self):
         """Build rest files to site directory."""
-
+        logger.info('Building files')
         sitedir = self.sitedir
 
         for filepath in self.cache.get('_post_files') or ():
@@ -261,12 +274,14 @@ class Builder(object):
                 fcopy(filepath, dest)
 
     def build_html(self, filepath, dest):
+        logger.debug('HTML %s -> %s' % (filepath, dest))
         with open(filepath, 'r') as f:
             tpl = self.jinja.from_string(to_unicode(f.read()))
         content = tpl.render()
         fwrite(dest, content)
 
     def build_paginator(self, filepath, dest):
+        logger.debug('Pagination %s -> %s' % (filepath, dest))
         with open(filepath, 'r') as f:
             tpl = self.jinja.from_string(to_unicode(f.read()))
 
