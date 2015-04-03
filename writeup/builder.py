@@ -21,6 +21,7 @@ from ._compat import to_unicode
 from .utils import is_markdown, is_subdir, is_html
 from .utils import fwrite, fcopy, fwalk, is_ignore_file
 from .utils import Paginator
+from .app import create_jinja
 
 logger = logging.getLogger('writeup')
 
@@ -351,43 +352,3 @@ def default_config(filepath='_config.yml'):
     config.setdefault('permalink', '/:year/:filename.html')
     config.setdefault('excludes', [filepath])
     return config
-
-
-def create_jinja(**kwargs):
-    """Create jinja loader."""
-    from jinja2 import Environment, FileSystemLoader
-    from . import filters
-
-    source = kwargs.get('source')
-    loaders = []
-
-    layoutsdir = os.path.join(source, '_layouts')
-    if not os.path.exists(layoutsdir):
-        raise RuntimeError('_layouts directory is required.')
-
-    loaders.append(layoutsdir)
-
-    includedir = os.path.join(source, '_includes')
-    if os.path.exists(includedir):
-        loaders.append(includedir)
-
-    jinja = Environment(
-        loader=FileSystemLoader(loaders),
-        trim_blocks=True,
-        lstrip_blocks=True,
-        autoescape=False,
-        extensions=[
-            'jinja2.ext.do',
-            'jinja2.ext.loopcontrols',
-            'jinja2.ext.with_',
-        ]
-    )
-    jinja.filters.update(dict(
-        markdown=filters.markdown,
-        xmldatetime=filters.xmldatetime,
-        wordcount=filters.wordcount,
-        linguist=filters.linguist,
-    ))
-
-    jinja._last_updated = max((os.path.getmtime(d) for d in loaders))
-    return jinja
