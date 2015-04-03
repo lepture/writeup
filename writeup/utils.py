@@ -9,8 +9,10 @@
 """
 
 import os
+import re
 import shutil
-from ._compat import to_bytes
+import unicodedata
+from ._compat import to_bytes, to_unicode
 
 
 class _Missing(object):
@@ -42,6 +44,20 @@ class cached_property(property):
             value = self.func(obj)
             obj.__dict__[self.__name__] = value
         return value
+
+
+def slugify(s):
+    """Make clean slug."""
+    rv = []
+    for c in unicodedata.normalize('NFKC', to_unicode(s)):
+        cat = unicodedata.category(c)[0]
+        if cat in 'LN' or c in '-_~/':
+            rv.append(c)
+        if cat == 'Z':
+            rv.append(' ')
+    new = ''.join(rv).strip()
+    new = re.sub('[-\s]+', '-', new)
+    return new.lower()
 
 
 def is_markdown(filepath):
