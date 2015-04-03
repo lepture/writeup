@@ -96,3 +96,15 @@ def create_jinja(layouts='_layouts', includes='_includes'):
 
     jinja._last_updated = max((os.path.getmtime(d) for d in loaders))
     return jinja
+
+
+def load_config(filepath='_config.yml'):
+    """Load and parse configuration from a yaml file."""
+    from yaml import load
+    try:
+        from yaml import CLoader as Loader
+    except ImportError:
+        from yaml import Loader
+
+    with open(filepath, 'r') as f:
+        return load(f, Loader)
