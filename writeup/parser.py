@@ -179,23 +179,25 @@ class Post(object):
 
     @property
     def url(self):
-        if 'url' not in self.meta:
-            style = self._config.get(
-                'permalink', '/:year/:filename.html'
-            )
-            if self.type == 'post':
-                self.meta['url'] = permalink(self, style)
+        if 'url' in self.meta:
+            return self.meta['url']
+
+        style = self._config.get(
+            'permalink', '/:year/:filename.html'
+        )
+        if self.type == 'post':
+            self.meta['url'] = permalink(self, style)
+        else:
+            if self.dirname:
+                url = '/%s/%s' % (self.dirname, self.filename)
             else:
-                if self.dirname:
-                    url = '/%s/%s' % (self.dirname, self.filename)
-                else:
-                    url = '/%s' % self.filename
-                if style.endswith('.html'):
-                    url += '.html'
-                elif style.endswith('/'):
-                    url += '/'
-                # make sure url is flat
-                self.meta['url'] = re.sub(r'\/{2,}', '/', url)
+                url = '/%s' % self.filename
+            if style.endswith('.html'):
+                url += '.html'
+            elif style.endswith('/'):
+                url += '/'
+            # make sure url is flat
+            self.meta['url'] = re.sub(r'\/{2,}', '/', url)
         return self.meta['url']
 
     @property
