@@ -108,11 +108,15 @@ class Request(object):
 
     @cached_property
     def title(self):
-        return self._data['title']
+        return self._data.get('title')
 
     @cached_property
     def description(self):
-        return self._data['description']
+        return self._data.get('description')
+
+    @cached_property
+    def content(self):
+        return self._data.get('content')
 
     @cached_property
     def tags(self):
