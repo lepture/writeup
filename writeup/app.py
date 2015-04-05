@@ -1,17 +1,21 @@
 # coding: utf-8
 
 import os
-from .globals import _top, current_app
+from contextlib import contextmanager
+from .globals import _top
 from .utils import cached_property
 
 
 class Application(object):
-    def __init__(self, **kwargs):
+    def __init__(self, config=None, **kwargs):
         kwargs.setdefault('basedir', '.')
         kwargs.setdefault('postsdir', '_posts')
         kwargs.setdefault('sitedir', '_site')
         kwargs.setdefault('cachedir', '.cache')
-        kwargs.setdefault('permalink', '/:dirname/:filename')
+        kwargs.setdefault('permalink', '/:dirname/:filename.html')
+
+        if config is not None:
+            kwargs.update(load_config(config))
 
         self.config = kwargs
 
@@ -35,35 +39,18 @@ class Application(object):
     def cachedir(self):
         return os.path.abspath(self.config.get('sitedir'))
 
-    def run(self):
-        _top.app = self
-
-
-class Builder(object):
-    def __init__(self, app=None):
-        if app is not None:
-            self.app = app
-        else:
-            self.app = current_app
-
     @cached_property
     def jinja(self):
-        # TODO
-        return create_jinja()
+        # TODO: name
+        layouts = self.config.get('layouts', '_layouts')
+        includes = self.config.get('includes', '_includes')
+        return create_jinja(layouts, includes)
 
-    def iter_requests(self):
-        raise NotImplementedError
-
-    def build(self, req):
-        raise NotImplementedError
-
-    def run(self):
-        for req in self.iter_requests():
-            _top.request = req
-            self.build(req)
-
-        # clean request
-        del _top.request
+    @contextmanager
+    def create_context(self):
+        _top.app = self
+        yield
+        del _top.app
 
 
 def create_jinja(layouts='_layouts', includes='_includes'):

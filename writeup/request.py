@@ -9,6 +9,41 @@ from .globals import current_app
 from .utils import cached_property, slugify, to_datetime
 
 
+class Indexer(object):
+    def __init__(self, name, *keys):
+        self.db_file = os.path.join(current_app.cachedir, name)
+        self.keys = keys
+
+    @cached_property
+    def _data(self):
+        if not os.path.exists(self.db_file):
+            return {}
+
+        with open(self.db_file, 'rb') as f:
+            return json.load(f)
+
+    def add(self, req):
+        value = {k: getattr(req, k) for k in self.keys}
+        self._data[req.filepath] = value
+
+    def keys(self):
+        return self._data.keys()
+
+    def save(self):
+        filepath = os.path.join(current_app.cachedir, self.db_file)
+        with open(filepath, 'wb') as f:
+            f.dump(self._data, f)
+
+
+posts = Indexer(
+    'post.index', 'date', 'mtime', 'dirname', 'tags', 'title',
+)
+
+pages = Indexer(
+    'page.index', 'mtime', 'dirname', 'title',
+)
+
+
 class Request(object):
     def __init__(self, filepath):
         self.filepath = filepath
@@ -32,8 +67,7 @@ class Request(object):
 
         data = parse(self.filepath)
         if data is None:
-            # TODO
-            raise
+            raise RuntimeError("Parse request failed")
 
         with open(filepath, 'wb') as f:
             json.dump(data, f)
@@ -89,7 +123,7 @@ class Request(object):
 
         style = current_app.permalink
         if self.get_type() == 'post':
-            return permalink(self, style)
+            return create_permalink(self, style)
 
         if self.dirname:
             url = '/%s/%s' % (self.dirname, self.filename)
@@ -101,6 +135,14 @@ class Request(object):
             url += '/'
         # make sure url is flat
         return re.sub(r'\/{2,}', '/', url)
+
+    @cached_property
+    def title(self):
+        return self._data['title']
+
+    @cached_property
+    def description(self):
+        return self._data['description']
 
     @cached_property
     def tags(self):
@@ -131,7 +173,7 @@ def static_url(filepath, url=None):
     return '%s?t=%i' % (url, t)
 
 
-def permalink(obj, style):
+def create_permalink(obj, style):
     """Generate permalink by the given style.
 
     A style is defined in _config.yml, an example::
