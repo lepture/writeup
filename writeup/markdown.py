@@ -1,11 +1,13 @@
 # coding: utf-8
 
+import os
 import re
 import mistune as m
 from markupsafe import escape
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
+from .globals import current_app
 
 
 def _iframe(src, width=650, height=365, content=None, link=None):
@@ -200,7 +202,7 @@ def _get_md(highlight, inlinestyles, linenos, lazyimg):
 
 
 def markdown(text, highlight=True, inlinestyles=False, linenos=False,
-             lazyimg=False):
+             lazyimg=False, cache_key=None):
     """Markdown filter for writeup.
 
     :param text: the content to be markdownify
@@ -208,9 +210,24 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False,
     :param inlinestyles: highlight the code with inline styles
     :param linenos: show linenos of the highlighted code
     :param lazyimg: render image src as data-src
+    :param cache_key: read from cache if possible
     """
     if not text:
         return u''
 
+    if not cache_key:
+        md = _get_md(highlight, inlinestyles, linenos, lazyimg)
+        return md.render(text)
+
+    ident = hash((highlight, inlinestyles, linenos, lazyimg))
+    key = 'markdown.%i.%s' % (ident, cache_key)
+    cache_file = os.path.join(current_app.cachedir, key)
+    if os.path.is_file(cache_file):
+        with open(cache_file, 'rb') as f:
+            return f.read()
+
     md = _get_md(highlight, inlinestyles, linenos, lazyimg)
-    return md.render(text)
+    html = md.render(text)
+    with open(cache_file, 'wb') as f:
+        f.write(html)
+    return html
