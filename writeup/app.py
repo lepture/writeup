@@ -48,7 +48,6 @@ class Application(object):
 
     @cached_property
     def jinja(self):
-        # TODO: name
         layouts = self.config.get('layouts', '_layouts')
         includes = self.config.get('includes', '_includes')
         return create_jinja(layouts, includes)
@@ -72,23 +71,35 @@ class Application(object):
     @cached_property
     def file_indexer(self):
         db_file = os.path.join(self.cachedir, 'file.index')
-        return Indexer(db_file, 'mtime', 'dirname')
+        return Indexer(db_file, 'mtime', 'dirname', 'filename')
 
     def create_index(self):
         _top.app = self
 
         def index_request(req):
-            rtype = req.get_type()
-            if rtype == 'post':
+            if req.post_type == 'post':
                 self.post_indexer.add(req)
-            elif rtype == 'page':
+            elif req.post_type == 'page':
                 self.page_indexer.add(req)
+            elif req.post_type == 'file':
+                self.file_indexer.add(req)
 
-        for filename in fwalk(self.basedir):
+        if self.basedir in self.postsdir:
+            includes = [os.path.relpath(self.postsdir, self.basedir)]
+        else:
+            includes = None
+
+        for filename in fwalk(self.basedir, includes=includes):
             index_request(Request(filename))
+
+        if not includes:
+            for filename in fwalk(self.postsdir):
+                index_request(Request(filename))
 
         self.post_indexer.save()
         self.page_indexer.save()
+        self.file_indexer.save()
+        del _top.app
 
 
 class Indexer(object):

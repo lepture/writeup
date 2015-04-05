@@ -12,6 +12,7 @@ import os
 import re
 import json
 import shutil
+import fnmatch
 import datetime
 import unicodedata
 from ._compat import to_bytes, to_unicode
@@ -149,6 +150,7 @@ def fwalk(source, includes=None, excludes=None):
             dirnames.remove('.git')
         if '.svn' in dirnames:
             dirnames.remove('.git')
+
         for name in dirs:
             if name.startswith('.') and name in dirnames:
                 dirnames.remove(name)
@@ -160,10 +162,13 @@ def fwalk(source, includes=None, excludes=None):
             if filename.startswith('.'):
                 # ignore hidden files
                 continue
+
             filepath = os.path.join(dirpath, filename)
             relpath = os.path.relpath(filepath, source)
-            if not (excludes and relpath in excludes):
-                yield filepath
+            if excludes and fnmatch.fnmatch(relpath, excludes):
+                continue
+
+            yield filepath
 
 
 def is_subdir(source, target):

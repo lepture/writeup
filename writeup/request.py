@@ -32,7 +32,7 @@ class Request(object):
 
         data = parse(self.filepath)
         if data is None:
-            raise RuntimeError("Parse request failed")
+            return {}
 
         with open(filepath, 'wb') as f:
             json_dump(data, f)
@@ -45,7 +45,8 @@ class Request(object):
         except AttributeError:
             return self._data.get(key, None)
 
-    def get_type(self):
+    @cached_property
+    def post_type(self):
         ext = os.path.splitext(self.filepath)[1]
         if ext not in ('.md', '.mkd', '.markdown'):
             return 'file'
@@ -57,7 +58,7 @@ class Request(object):
             return 'draft'
 
         if 'date' not in self._data:
-            return 'invalid'
+            return 'draft'
 
         return 'post'
 
@@ -91,7 +92,7 @@ class Request(object):
             return self._data['url']
 
         style = current_app.permalink
-        if self.get_type() == 'post':
+        if self.post_type == 'post':
             return create_permalink(self, style)
 
         if self.dirname:
