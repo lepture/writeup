@@ -10,7 +10,6 @@
 
 
 import sys
-import datetime
 PY3 = sys.version_info[0] == 3
 
 if PY3:
@@ -42,31 +41,3 @@ def to_bytes(value, encoding='utf-8'):
     if isinstance(value, bytes_type):
         return value
     return value.encode(encoding)
-
-
-def to_datetime(value):
-    """Convert possible value to datetime."""
-    if not value:
-        return None
-    if isinstance(value, datetime.datetime):
-        return value
-    if isinstance(value, datetime.date):
-        return datetime.datetime.combine(
-            value, datetime.datetime.min.time()
-        )
-    supported_formats = [
-        '%a %b %d %H:%M:%S %Y',
-        '%Y-%m-%d %H:%M:%S',
-        '%Y-%m-%d %H:%M',
-        '%Y-%m-%dT%H:%M',
-        '%Y%m%d %H:%M:%S',
-        '%Y%m%d %H:%M',
-        '%Y-%m-%d',
-        '%Y%m%d',
-    ]
-    for fmt in supported_formats:
-        try:
-            return datetime.datetime.strptime(value, fmt)
-        except ValueError:
-            pass
-    raise ValueError('Unrecognized date/time: %r' % value)

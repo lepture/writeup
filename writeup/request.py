@@ -4,10 +4,9 @@ import os
 import re
 import json
 import pytz
-from .utils import cached_property, slugify
-from .globals import current_app
 from .parser import parse
-from ._compat import to_datetime
+from .globals import current_app
+from .utils import cached_property, slugify, to_datetime
 
 
 class Request(object):

@@ -11,6 +11,7 @@
 import os
 import re
 import shutil
+import datetime
 import unicodedata
 from ._compat import to_bytes, to_unicode
 
@@ -44,6 +45,38 @@ class cached_property(property):
             value = self.func(obj)
             obj.__dict__[self.__name__] = value
         return value
+
+
+def to_datetime(value):
+    """Convert possible value to datetime."""
+    if not value:
+        return None
+    if isinstance(value, datetime.datetime):
+        return value
+    if isinstance(value, datetime.date):
+        return datetime.datetime.combine(
+            value, datetime.datetime.min.time()
+        )
+    if isinstance(value, (int, float)):
+        # TODO
+        return value
+
+    supported_formats = [
+        '%a %b %d %H:%M:%S %Y',
+        '%Y-%m-%d %H:%M:%S',
+        '%Y-%m-%d %H:%M',
+        '%Y-%m-%dT%H:%M',
+        '%Y%m%d %H:%M:%S',
+        '%Y%m%d %H:%M',
+        '%Y-%m-%d',
+        '%Y%m%d',
+    ]
+    for fmt in supported_formats:
+        try:
+            return datetime.datetime.strptime(value, fmt)
+        except ValueError:
+            pass
+    raise ValueError('Unrecognized date/time: %r' % value)
 
 
 def slugify(s):
@@ -127,10 +160,7 @@ def is_subdir(source, target):
 
 def is_html(filepath):
     exts = ('.html', '.xml')
-    for ext in exts:
-        if filepath.endswith(ext):
-            return True
-    return False
+    return any([filepath.endswith(ext) for ext in exts])
 
 
 def is_ignore_file(filepath):
