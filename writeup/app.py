@@ -1,9 +1,12 @@
 # coding: utf-8
 
 import os
+import json
 from contextlib import contextmanager
+from .request import Request
 from .globals import _top
 from .utils import cached_property
+from .utils import fwalk, json_dump
 
 
 class Application(object):
@@ -37,7 +40,11 @@ class Application(object):
 
     @cached_property
     def cachedir(self):
-        return os.path.abspath(self.config.get('sitedir'))
+        directory = os.path.abspath(self.config.get('cachedir'))
+        if os.path.isdir(directory):
+            return directory
+        os.makedirs(directory)
+        return directory
 
     @cached_property
     def jinja(self):
@@ -51,6 +58,72 @@ class Application(object):
         _top.app = self
         yield
         del _top.app
+
+    @cached_property
+    def post_indexer(self):
+        db_file = os.path.join(self.cachedir, 'post.index')
+        return Indexer(db_file, 'mtime', 'dirname', 'tags', 'title')
+
+    @cached_property
+    def page_indexer(self):
+        db_file = os.path.join(self.cachedir, 'page.index')
+        return Indexer(db_file, 'mtime', 'dirname', 'title')
+
+    @cached_property
+    def file_indexer(self):
+        db_file = os.path.join(self.cachedir, 'file.index')
+        return Indexer(db_file, 'mtime', 'dirname')
+
+    def create_index(self):
+        _top.app = self
+
+        def index_request(req):
+            rtype = req.get_type()
+            if rtype == 'post':
+                self.post_indexer.add(req)
+            elif rtype == 'page':
+                self.page_indexer.add(req)
+
+        for filename in fwalk(self.basedir):
+            index_request(Request(filename))
+
+        self.post_indexer.save()
+        self.page_indexer.save()
+
+
+class Indexer(object):
+    def __init__(self, db_file, *keys):
+        self.db_file = db_file
+        self.keys = keys
+
+    @cached_property
+    def mtime(self):
+        if not os.path.exists(self.db_file):
+            return None
+        return os.path.getmtime(self.db_file)
+
+    @cached_property
+    def _data(self):
+        if not os.path.exists(self.db_file):
+            return {}
+
+        with open(self.db_file, 'rb') as f:
+            return json.load(f)
+
+    def add(self, req):
+        if self.mtime and self.mtime > req.mtime:
+            # ignore this file
+            return
+        value = {k: getattr(req, k) for k in self.keys}
+        self._data[req.filepath] = value
+
+    def keys(self):
+        return self._data.keys()
+
+    def save(self):
+        data = self._data
+        with open(self.db_file, 'wb') as f:
+            json_dump(data, f)
 
 
 def create_jinja(layouts='_layouts', includes='_includes'):

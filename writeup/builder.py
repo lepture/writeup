@@ -21,6 +21,10 @@ class Builder(object):
     def __init__(self):
         pass
 
+    def is_supported(self, filename):
+        ext = os.path.splitext(filename)[1]
+        return ext in ('.md', '.mkd', '.markdown')
+
 
 class RequestBuilder(Builder):
     pass

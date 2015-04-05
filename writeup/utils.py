@@ -10,6 +10,7 @@
 
 import os
 import re
+import json
 import shutil
 import datetime
 import unicodedata
@@ -77,6 +78,19 @@ def to_datetime(value):
         except ValueError:
             pass
     raise ValueError('Unrecognized date/time: %r' % value)
+
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime.datetime):
+            return o.strftime('%Y-%m-%d %H:%M:%S')
+        if isinstance(o, datetime.date):
+            return o.strftime('%Y-%m-%d')
+        return super(JSONEncoder, self).default(o)
+
+
+def json_dump(obj, f):
+    json.dump(obj, f, cls=JSONEncoder)
 
 
 def slugify(s):

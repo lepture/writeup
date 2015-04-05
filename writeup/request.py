@@ -6,42 +6,7 @@ import json
 import pytz
 from .parser import parse
 from .globals import current_app
-from .utils import cached_property, slugify, to_datetime
-
-
-class Indexer(object):
-    def __init__(self, name, *keys):
-        self.db_file = os.path.join(current_app.cachedir, name)
-        self.keys = keys
-
-    @cached_property
-    def _data(self):
-        if not os.path.exists(self.db_file):
-            return {}
-
-        with open(self.db_file, 'rb') as f:
-            return json.load(f)
-
-    def add(self, req):
-        value = {k: getattr(req, k) for k in self.keys}
-        self._data[req.filepath] = value
-
-    def keys(self):
-        return self._data.keys()
-
-    def save(self):
-        filepath = os.path.join(current_app.cachedir, self.db_file)
-        with open(filepath, 'wb') as f:
-            f.dump(self._data, f)
-
-
-posts = Indexer(
-    'post.index', 'date', 'mtime', 'dirname', 'tags', 'title',
-)
-
-pages = Indexer(
-    'page.index', 'mtime', 'dirname', 'title',
-)
+from .utils import cached_property, slugify, to_datetime, json_dump
 
 
 class Request(object):
@@ -70,7 +35,7 @@ class Request(object):
             raise RuntimeError("Parse request failed")
 
         with open(filepath, 'wb') as f:
-            json.dump(data, f)
+            json_dump(data, f)
 
         return data
 
@@ -81,6 +46,10 @@ class Request(object):
             return self._data.get(key, None)
 
     def get_type(self):
+        ext = os.path.splitext(self.filepath)[1]
+        if ext not in ('.md', '.mkd', '.markdown'):
+            return 'file'
+
         if current_app.postsdir not in self.filepath:
             return 'page'
 
