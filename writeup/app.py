@@ -61,12 +61,12 @@ class Application(object):
     @cached_property
     def post_indexer(self):
         db_file = os.path.join(self.cachedir, 'post.index')
-        return Indexer(db_file, 'mtime', 'dirname', 'tags', 'title')
+        return Indexer(db_file, 'mtime', 'dirname', 'tags', 'date')
 
     @cached_property
     def page_indexer(self):
         db_file = os.path.join(self.cachedir, 'page.index')
-        return Indexer(db_file, 'mtime', 'dirname', 'title')
+        return Indexer(db_file, 'mtime', 'dirname', 'filename')
 
     @cached_property
     def file_indexer(self):
@@ -130,6 +130,13 @@ class Indexer(object):
 
     def keys(self):
         return self._data.keys()
+
+    def filter(self, func):
+        for key in self._data:
+            rv = self._data[key]
+            rv['filepath'] = key
+            if func(rv):
+                yield key
 
     def save(self):
         data = self._data
