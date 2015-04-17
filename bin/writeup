@@ -92,26 +92,16 @@ def serve(config='_config.yml', source='.', dest='_site', postsdir='_posts',
     else:
         logger.setLevel(logging.INFO)
 
-    from writeup.builder import Builder
     from writeup.server import Server
 
-    if build:
-        builder = Builder(
-            config=config, source=source, sitedir=dest,
-            postsdir=postsdir, force=force,
-        )
-        builder.build()
-        watch = builder.build
-    else:
-        watch = None
     server = Server(dest)
 
     try:
         from livereload import Server as LiveServer
 
         liveserver = LiveServer(server.wsgi)
-        liveserver.watcher._ignore_folders = ['.git', dest]
-        liveserver.watch(source, watch)
+        # liveserver.watcher._ignore_folders = ['.git', dest]
+        # liveserver.watch(source, watch)
         liveserver.serve(port=port)
     except ImportError:
         try:
