@@ -3,10 +3,13 @@
 import os
 import json
 import fnmatch
+import logging
 from .request import Request
 from .globals import _top
 from .utils import cached_property
 from .utils import json_dump
+
+logger = logging.getLogger('writeup')
 
 
 class Application(object):
@@ -76,6 +79,7 @@ class Application(object):
     def create_index(self):
 
         def index_request(req):
+            logger.debug('indexing [%s]: %s' % (req.post_type, req.relpath))
             if req.post_type == 'post':
                 self.post_indexer.add(req)
             elif req.post_type == 'page':

@@ -4,9 +4,12 @@ import os
 import re
 import json
 import pytz
+import logging
 from .parser import parse
 from .globals import current_app
 from .utils import cached_property, slugify, to_datetime, json_dump
+
+logger = logging.getLogger('writeup')
 
 
 class Request(object):
@@ -32,8 +35,10 @@ class Request(object):
 
         data = parse(self.filepath)
         if data is None:
+            logger.warn('parsing failed: %s' % self.relpath)
             return {}
 
+        logger.debug('parsing success: %s' % self.relpath)
         with open(filepath, 'wb') as f:
             json_dump(data, f)
 

@@ -51,6 +51,7 @@ class Builder(object):
 class PostBuilder(Builder):
     def build(self, filepath):
         req = Request(filepath)
+        logger.debug('building [%s]: %s' % (req.post_type, req.relpath))
         dest = self.get_destination(req)
         if not dest:
             return
@@ -76,17 +77,18 @@ class FileBuilder(Builder):
             return False
         return filepath.endswith('/index.html')
 
-    def get_destination(self, filepath):
-        if self.app.postsdir in filepath:
-            dest = os.path.relpath(filepath, self.app.postsdir)
-        else:
-            dest = os.path.relpath(filepath, self.app.basedir)
-        return os.path.join(self.app.sitedir, dest)
-
     def build_html(self, filepath):
-        dest = self.get_destination(filepath)
+        if self.app.postsdir in filepath:
+            relpath = os.path.relpath(filepath, self.app.postsdir)
+        else:
+            relpath = os.path.relpath(filepath, self.app.basedir)
+
+        logger.debug('building [html]: %s' % relpath)
+        dest = os.path.join(self.app.sitedir, relpath)
+
         with open(filepath, 'rb') as f:
             tpl = self.app.jinja.from_string(to_unicode(f.read()))
+
         content = tpl.render()
         self.write(content, dest)
 
@@ -95,6 +97,8 @@ class FileBuilder(Builder):
             tpl = self.app.jinja.from_string(to_unicode(f.read()))
 
         name = os.path.relpath(filepath, self.app.postsdir)
+        logger.debug('building [paginator]: %s' % name)
+
         dirname = os.path.dirname(name) or None
 
         dest = os.path.join(self.app.sitedir, name)
@@ -145,6 +149,7 @@ class FileBuilder(Builder):
         if os.path.exists(dest) and source_time <= os.path.getmtime(dest):
             return
 
+        logger.debug('building [assets]: %s' % name)
         folder = os.path.split(dest)[0]
         if not os.path.isdir(folder):
             os.makedirs(folder)
