@@ -62,13 +62,12 @@ def build(config='_config.yml', source='.', dest='_site',
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
-    from writeup.builder import Builder
-    builder = Builder(
-        config=config, source=source, sitedir=dest,
-        postsdir=postsdir, force=force,
-    )
+
+    from writeup import Writeup
+
+    app = Writeup(config=config)
     begin = time.time()
-    builder.build()
+    app.run()
     delta = (time.time() - begin) * 1000
     print('  Finish in %s ms' % color.cyan(str(int(delta))))
 

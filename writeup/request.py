@@ -3,7 +3,6 @@
 import os
 import re
 import json
-import pytz
 import logging
 from .parser import parse
 from .utils import _top
@@ -154,11 +153,7 @@ class Request(object):
         if self.file_type != 'post':
             return None
 
-        timezone = self._app.config.get('timezone')
-        if not timezone:
-            timezone = 'Asia/Chongqing'
-
-        tz = pytz.timezone(timezone)
+        tz = self._app.timezone
         return tz.localize(to_datetime(self._data['date']))
 
 

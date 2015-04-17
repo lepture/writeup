@@ -29,6 +29,10 @@ class Application(object):
         self.config = kwargs
 
     @cached_property
+    def timezone(self):
+        return pytz.timezone(self.config.get('timezone', 'Asia/Shanghai'))
+
+    @cached_property
     def permalink(self):
         return self.config.get('permalink')
 
@@ -233,8 +237,7 @@ def walk_tree(source, includes=None, excludes=None):
 def create_jinja_globals(app):
 
     site = app.config.copy()
-    tz = pytz.timezone(site.get('timezone', 'Asia/Shanghai'))
-    site['now'] = tz.localize(datetime.datetime.now())
+    site['now'] = app.timezone.localize(datetime.datetime.now())
 
     def filter_posts(subdirectory=None, reverse=True, count=None):
         dirname = subdirectory
