@@ -24,6 +24,7 @@ class Application(object):
         kwargs.setdefault('permalink', '/:dirname/:filename.html')
 
         if config is not None:
+            logger.info('LOADING CONFIG')
             kwargs.update(load_config(config))
 
         self.config = kwargs
@@ -86,7 +87,7 @@ class Application(object):
         return Indexer(db_file, 'mtime', 'dirname', 'filename')
 
     def create_index(self):
-        logger.info('indexing')
+        logger.info('INDEXING DATA')
 
         def index_request(req):
             logger.debug('indexing [%s]: %s' % (req.file_type, req.relpath))
@@ -258,6 +259,7 @@ def create_jinja_globals(app):
             yield Request(rv['filepath'])
 
     site['posts'] = filter_posts
+    site['request'] = _top.request
 
     def static_url(filepath, url=None):
         """Generate static url."""

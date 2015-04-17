@@ -71,14 +71,14 @@ class PostBuilder(Builder):
             self.write(content, dest)
 
     def run(self):
-        logger.info('building posts')
+        logger.info('BUILDING POSTS')
         for filepath in self.app.post_indexer.keys():
             self.build(filepath)
 
 
 class PageBuilder(PostBuilder):
     def run(self):
-        logger.info('building pages')
+        logger.info('BUILDING PAGES')
         for filepath in self.app.page_indexer.keys():
             self.build(filepath)
 
@@ -158,6 +158,11 @@ class FileBuilder(Builder):
         if self.app.postsdir in filepath:
             # ignore assets in posts dir
             return
+
+        if not os.path.exists(filepath):
+            # TODO: clean indexer
+            return
+
         name = os.path.relpath(filepath, self.app.basedir)
         dest = os.path.join(self.app.sitedir, name)
 
@@ -180,7 +185,7 @@ class FileBuilder(Builder):
             self.build_asset(filepath)
 
     def run(self):
-        logger.info('building files')
+        logger.info('BUILDING FILES')
         for filepath in self.app.file_indexer.keys():
             self.build(filepath)
 

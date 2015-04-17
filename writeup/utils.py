@@ -19,6 +19,8 @@ from ._compat import to_bytes, to_unicode
 
 
 _top = threading.local()
+# set default request
+_top.request = None
 
 
 class _Missing(object):
