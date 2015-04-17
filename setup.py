@@ -12,11 +12,6 @@ try:
 except ImportError:
     from distutils.core import setup
 
-from email.utils import parseaddr
-import writeup
-
-author, author_email = parseaddr(writeup.__author__)
-
 
 def fread(filename):
     with open(filename) as f:
@@ -25,10 +20,10 @@ def fread(filename):
 
 setup(
     name='Writeup',
-    version=writeup.__version__,
-    author=author,
-    author_email=author_email,
-    url=writeup.__homepage__,
+    version='0.2',
+    author='Hsiaoming Yang',
+    author_email='me@lepture.com',
+    url='https://github.com/lepture',
     packages=["writeup"],
     description="Blog software for Essayup.",
     zip_safe=False,

@@ -274,7 +274,7 @@ def create_jinja_globals(app):
             yield Request(k)
 
     site['posts'] = filter_posts
-    site['request'] = _top.request
+    # site['request'] = _top.request
 
     def static_url(filepath, url=None):
         """Generate static url."""

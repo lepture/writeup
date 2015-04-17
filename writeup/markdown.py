@@ -28,7 +28,7 @@ def _iframe(src, width=650, height=365, content=None, link=None):
 
 def youtube(link):
     """Find youtube player URL."""
-    pattern = r'http://www\.youtube\.com\/watch\?v=([a-zA-Z0-9\-\_]+)'
+    pattern = r'https?://www\.youtube\.com\/watch\?v=([a-zA-Z0-9\-\_]+)'
     match = re.match(pattern, link)
     if not match:
         pattern = r'http:\/\/youtu.be\/([a-zA-Z0-9\-\_]+)'
