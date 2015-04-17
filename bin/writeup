@@ -14,7 +14,6 @@ import sys
 import time
 import writeup
 import logging
-import datetime
 from terminal import color
 from terminal.builtin import Command
 
@@ -24,23 +23,33 @@ logger = logging.getLogger('writeup')
 
 
 class WriteupHandler(logging.Handler):
+    last = 0
     cwd = os.getcwd() + '/'
 
     def emit(self, record):
         msg = record.msg.replace(self.cwd, '')
-        now = datetime.datetime.now()
-        time = now.strftime('%H:%M:%S')
+        now = int(time.time() * 1000)
+        if self.last:
+            delta = now - self.last
+        else:
+            delta = 0
+
+        self.last = now
+        mark = str(now)[-5:]
         std = sys.stdout
+
         if record.levelname == 'INFO':
-            time = color.green(time)
+            mark = color.green(mark)
         elif record.levelname == 'DEBUG':
-            time = color.magenta(time)
+            mark = color.magenta(mark)
         elif record.levelname == 'WARN':
-            time = color.yellow(time)
+            mark = color.yellow(mark)
         elif record.levelname == 'ERROR':
-            time = color.red(time)
+            mark = color.red(mark)
             std = sys.stderr
-        output = '  %s: %s\n' % (time, msg)
+
+        msg = msg.ljust(36)
+        output = '  %s: %s %s\n' % (mark, msg, color.blue(str(delta)))
         std.write(output)
 
 logger.addHandler(WriteupHandler())
