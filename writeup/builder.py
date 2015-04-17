@@ -13,6 +13,8 @@ import os
 import re
 import shutil
 import logging
+from contextlib import contextmanager
+from .globals import _top
 from .request import Request
 from ._compat import to_unicode, to_bytes
 
@@ -24,17 +26,11 @@ class Builder(object):
     def __init__(self, app):
         self.app = app
 
-    def get_destination(self, req):
-        dest = req.url
-        if dest.endswith('/'):
-            dest += 'index.html'
-        elif not dest.endswith('.html'):
-            dest += '.html'
-
-        dest = os.path.join(self.app.sitedir, dest.lstrip('/'))
-        if os.path.isfile(dest) and os.path.getmtime(dest) > req.mtime:
-            return None
-        return dest
+    @contextmanager
+    def create_context(self, req):
+        _top.request = req
+        yield
+        del _top.request
 
     @staticmethod
     def write(content, dest):
@@ -49,6 +45,18 @@ class Builder(object):
 
 
 class PostBuilder(Builder):
+    def get_destination(self, req):
+        dest = req.url
+        if dest.endswith('/'):
+            dest += 'index.html'
+        elif not dest.endswith('.html'):
+            dest += '.html'
+
+        dest = os.path.join(self.app.sitedir, dest.lstrip('/'))
+        if os.path.isfile(dest) and os.path.getmtime(dest) > req.mtime:
+            return None
+        return dest
+
     def build(self, filepath):
         req = Request(filepath)
         logger.debug('building [%s]: %s' % (req.post_type, req.relpath))
@@ -57,8 +65,10 @@ class PostBuilder(Builder):
             return
         template = req.template or 'post.html'
         tpl = self.app.jinja.get_template(template)
-        content = tpl.render({'page': req})
-        self.write(content, dest)
+
+        with self.create_context(req):
+            content = tpl.render({'page': req})
+            self.write(content, dest)
 
     def run(self):
         for filepath in self.app.post_indexer.keys():
@@ -89,8 +99,9 @@ class FileBuilder(Builder):
         with open(filepath, 'rb') as f:
             tpl = self.app.jinja.from_string(to_unicode(f.read()))
 
-        content = tpl.render()
-        self.write(content, dest)
+        with self.create_context(Request(filepath)):
+            content = tpl.render()
+            self.write(content, dest)
 
     def build_paginator(self, filepath):
         with open(filepath, 'rb') as f:
@@ -120,23 +131,26 @@ class FileBuilder(Builder):
         paginator.per_page = self.app.config.get('perpage', 100)
         paginator._style = self.app.config.get('paginator_style', 'page-:num')
         paginator._root = root
-        content = tpl.render({'paginator': paginator})
-        self.write(content, dest)
+
+        with self.create_context(Request(filepath, url=paginator.url)):
+            content = tpl.render({'paginator': paginator})
+            self.write(content, dest)
 
         if paginator.pages < 2:
             return
 
         for i in range(2, paginator.pages + 1):
             paginator.page = i
-            url = self._style.replace(':num', str(i))
+            url = paginator._style.replace(':num', str(i))
             if url.endswith('/'):
                 url += 'index.html'
             elif not url.endswith('.html'):
                 url += '.html'
 
             new_dest = re.sub(r'index.html$', url, dest)
-            content = tpl.render({'paginator': paginator})
-            self.write(content, new_dest)
+            with self.create_context(Request(filepath, url=paginator.url)):
+                content = tpl.render({'paginator': paginator})
+                self.write(content, new_dest)
 
     def build_asset(self, filepath):
         if self.app.postsdir in filepath:
@@ -197,12 +211,19 @@ class Paginator(object):
     def prev_num(self):
         return self.page - 1
 
+    def create_url(self, num):
+        if num == 1:
+            return self._root
+        rv = self._style.replace(':num', str(num))
+        return self._root + rv
+
+    @property
+    def url(self):
+        return self.create_url(self.page)
+
     @property
     def prev_url(self):
-        if self.prev_num == 1:
-            return self._root
-        ret = self._style.replace(':num', str(self.prev_num))
-        return self._root + ret
+        return self.create_url(self.prev_num)
 
     @property
     def has_next(self):
@@ -214,8 +235,7 @@ class Paginator(object):
 
     @property
     def next_url(self):
-        ret = self._style.replace(':num', str(self.next_num))
-        return self._root + ret
+        return self.create_url(self.next_num)
 
     @property
     def posts(self):

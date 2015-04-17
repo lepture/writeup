@@ -4,6 +4,7 @@ import os
 import json
 import fnmatch
 import logging
+from contextlib import contextmanager
 from .request import Request
 from .globals import _top
 from .utils import cached_property
@@ -55,10 +56,10 @@ class Application(object):
         includes = self.config.get('includes', '_includes')
         return create_jinja(layouts, includes)
 
-    def __enter__(self):
+    @contextmanager
+    def create_context(self):
         _top.app = self
-
-    def __exit__(self, exc_type, exc_value, traceback):
+        yield
         del _top.app
 
     @cached_property

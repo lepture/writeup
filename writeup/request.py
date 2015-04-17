@@ -13,8 +13,9 @@ logger = logging.getLogger('writeup')
 
 
 class Request(object):
-    def __init__(self, filepath):
+    def __init__(self, filepath, **kwargs):
         self.filepath = filepath
+        self._values = kwargs
 
     @cached_property
     def mtime(self):
@@ -27,6 +28,14 @@ class Request(object):
 
     @cached_property
     def _data(self):
+        if self._should_parse_file():
+            data = self._parse_file()
+        else:
+            data = {}
+        data.update(self._values)
+        return data
+
+    def _parse_file(self):
         filepath = os.path.join(current_app.cachedir, self._cache_key)
 
         if os.path.exists(filepath):
@@ -50,10 +59,13 @@ class Request(object):
         except AttributeError:
             return self._data.get(key, None)
 
+    def _should_parse_file(self):
+        ext = os.path.splitext(self.filepath)[1]
+        return ext in ('.md', '.mkd', '.markdown')
+
     @cached_property
     def post_type(self):
-        ext = os.path.splitext(self.filepath)[1]
-        if ext not in ('.md', '.mkd', '.markdown'):
+        if not self._should_parse_file():
             return 'file'
 
         if current_app.postsdir not in self.filepath:
