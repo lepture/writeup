@@ -8,6 +8,7 @@ from pygments import highlight
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 from .utils import _top
+from ._compat import to_bytes, to_unicode
 
 
 def _iframe(src, width=650, height=365, content=None, link=None):
@@ -215,19 +216,22 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False,
     if not text:
         return u''
 
-    if not cache_key:
+    if cache_key is None and _top.request:
+        cache_key = '%i-%s' % (len(text), _top.request._cache_key)
+
+    if cache_key is None:
         md = _get_md(highlight, inlinestyles, linenos, lazyimg)
         return md.render(text)
 
     ident = hash((highlight, inlinestyles, linenos, lazyimg))
     key = 'markdown.%i.%s' % (ident, cache_key)
     cache_file = os.path.join(_top.app.cachedir, key)
-    if os.path.is_file(cache_file):
+    if os.path.isfile(cache_file):
         with open(cache_file, 'rb') as f:
-            return f.read()
+            return to_unicode(f.read())
 
     md = _get_md(highlight, inlinestyles, linenos, lazyimg)
     html = md.render(text)
     with open(cache_file, 'wb') as f:
-        f.write(html)
+        f.write(to_bytes(html))
     return html

@@ -99,6 +99,12 @@ def json_dump(obj, f):
     json.dump(obj, f, cls=JSONEncoder)
 
 
+def is_subdir(source, target):
+    """If target is a subdirectory of source."""
+    relpath = os.path.relpath(source, target)
+    return not relpath.startswith('../')
+
+
 def slugify(s):
     """Make clean slug."""
     rv = []

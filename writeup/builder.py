@@ -72,14 +72,14 @@ class PostBuilder(Builder):
 
     def run(self):
         logger.info('BUILDING POSTS')
-        for filepath in self.app.post_indexer.keys():
+        for filepath in self.app.post_indexer:
             self.build(filepath)
 
 
 class PageBuilder(PostBuilder):
     def run(self):
         logger.info('BUILDING PAGES')
-        for filepath in self.app.page_indexer.keys():
+        for filepath in self.app.page_indexer:
             self.build(filepath)
 
 
@@ -123,9 +123,7 @@ class FileBuilder(Builder):
             root = '/' + root
 
         if dirname:
-            items = list(self.app.post_indexer.filter(
-                lambda o: o['dirname'] == dirname
-            ))
+            items = self.app.filter_post_files(dirname=dirname)
         else:
             items = self.app.post_indexer.keys()
 
@@ -186,7 +184,7 @@ class FileBuilder(Builder):
 
     def run(self):
         logger.info('BUILDING FILES')
-        for filepath in self.app.file_indexer.keys():
+        for filepath in self.app.file_indexer:
             self.build(filepath)
 
 
@@ -250,5 +248,5 @@ class Paginator(object):
         start = (self.page - 1) * self.per_page
         end = self.page * self.per_page
         items = self.items[start:end]
-        for k, _ in items:
+        for k in items:
             yield Request(k)

@@ -9,8 +9,7 @@ import datetime
 from contextlib import contextmanager
 from .request import Request
 from .utils import _top
-from .utils import cached_property
-from .utils import json_dump
+from .utils import cached_property, json_dump, is_subdir
 
 logger = logging.getLogger('writeup')
 
@@ -86,6 +85,22 @@ class Application(object):
         db_file = os.path.join(self.cachedir, 'file.index')
         return Indexer(db_file, 'mtime', 'dirname', 'filename')
 
+    def filter_post_files(self, dirname=None, reverse=True, count=None):
+        data = self.post_indexer
+
+        if dirname:
+            keys = filter(
+                lambda k: is_subdir(data[k]['dirname'], dirname),
+                data,
+            )
+        else:
+            keys = data.keys()
+
+        keys = sorted(keys, key=lambda k: data[k]['date'], reverse=reverse)
+        if count:
+            keys = keys[:count]
+        return keys
+
     def create_index(self):
         logger.info('INDEXING DATA')
 
@@ -116,9 +131,9 @@ class Application(object):
 
 
 class Indexer(object):
-    def __init__(self, db_file, *keys):
+    def __init__(self, db_file, *keeps):
         self.db_file = db_file
-        self._keys = keys
+        self._keeps = keeps
 
     @cached_property
     def mtime(self):
@@ -138,23 +153,33 @@ class Indexer(object):
         if self.mtime and self.mtime > req.mtime:
             # ignore this file
             return
-        value = {k: getattr(req, k) for k in self._keys}
+        value = {k: getattr(req, k) for k in self._keeps}
         self._data[req.filepath] = value
 
     def keys(self):
         return self._data.keys()
 
-    def filter(self, func):
-        for key in self._data:
-            rv = self._data[key]
-            rv['filepath'] = key
-            if func(rv):
-                yield key
+    def flush(self):
+        self._data = {}
+        self.save()
 
     def save(self):
         data = self._data
         with open(self.db_file, 'wb') as f:
             json_dump(data, f)
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __setitem__(self, key, item):
+        self._data[key] = item
+
+    def __delitem__(self, key):
+        del self._data[key]
+
+    def __iter__(self):
+        for k in self._data:
+            yield k
 
 
 def create_jinja(layouts='_layouts', includes='_includes'):
@@ -223,7 +248,7 @@ def walk_tree(source, includes=None, excludes=None):
                     dirnames.remove(name)
 
         for filename in filenames:
-            if filename.startswith('.'):
+            if filename.startswith('.') or filename.startswith('_'):
                 # ignore hidden files
                 continue
 
@@ -242,21 +267,10 @@ def create_jinja_globals(app):
 
     def filter_posts(subdirectory=None, reverse=True, count=None):
         dirname = subdirectory
+        keys = app.filter_post_files(dirname, reverse=reverse, count=count)
 
-        def get_posts():
-            for key in app.post_indexer._data:
-                rv = app.post_indexer._data[key]
-                if dirname is not None and rv['dirname'] != dirname:
-                    continue
-                rv['filepath'] = key
-                yield rv
-
-        posts = sorted(get_posts(), key=lambda o: o['date'], reverse=reverse)
-        if count:
-            posts = posts[:count]
-
-        for rv in posts:
-            yield Request(rv['filepath'])
+        for k in keys:
+            yield Request(k)
 
     site['posts'] = filter_posts
     site['request'] = _top.request
