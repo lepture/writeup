@@ -150,14 +150,17 @@ class FileBuilder(Builder):
             os.makedirs(folder)
         shutil.copy(filepath, dest)
 
+    def build(self, filepath):
+        if self.should_build_paginator(filepath):
+            self.build_paginator(filepath)
+        elif filepath.endswith('.html') or filepath.endswith('.xml'):
+            self.build_html(filepath)
+        else:
+            self.build_asset(filepath)
+
     def run(self):
         for filepath in self.app.file_indexer.keys():
-            if self.should_build_paginator(filepath):
-                self.build_paginator(filepath)
-            elif filepath.endswith('.html') or filepath.endswith('.xml'):
-                self.build_html(filepath)
-            else:
-                self.build_asset(filepath)
+            self.build(filepath)
 
 
 class Paginator(object):

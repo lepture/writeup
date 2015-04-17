@@ -2,11 +2,11 @@
 
 import os
 import json
-from contextlib import contextmanager
+import fnmatch
 from .request import Request
 from .globals import _top
 from .utils import cached_property
-from .utils import fwalk, json_dump
+from .utils import json_dump
 
 
 class Application(object):
@@ -52,10 +52,10 @@ class Application(object):
         includes = self.config.get('includes', '_includes')
         return create_jinja(layouts, includes)
 
-    @contextmanager
-    def create_context(self):
+    def __enter__(self):
         _top.app = self
-        yield
+
+    def __exit__(self, exc_type, exc_value, traceback):
         del _top.app
 
     @cached_property
@@ -74,7 +74,6 @@ class Application(object):
         return Indexer(db_file, 'mtime', 'dirname', 'filename')
 
     def create_index(self):
-        _top.app = self
 
         def index_request(req):
             if req.post_type == 'post':
@@ -89,17 +88,16 @@ class Application(object):
         else:
             includes = None
 
-        for filename in fwalk(self.basedir, includes=includes):
+        for filename in walk_tree(self.basedir, includes=includes):
             index_request(Request(filename))
 
         if not includes:
-            for filename in fwalk(self.postsdir):
+            for filename in walk_tree(self.postsdir):
                 index_request(Request(filename))
 
         self.post_indexer.save()
         self.page_indexer.save()
         self.file_indexer.save()
-        del _top.app
 
 
 class Indexer(object):
@@ -176,7 +174,7 @@ def create_jinja(layouts='_layouts', includes='_includes'):
     return jinja
 
 
-def load_config(filepath='_config.yml'):
+def load_config(filepath):
     """Load and parse configuration from a yaml file."""
     from yaml import load
     try:
@@ -186,3 +184,37 @@ def load_config(filepath='_config.yml'):
 
     with open(filepath, 'r') as f:
         return load(f, Loader)
+
+
+def walk_tree(source, includes=None, excludes=None):
+    dirs = filter(
+        lambda f: os.path.isdir(os.path.join(source, f)),
+        os.listdir(source)
+    )
+
+    for dirpath, dirnames, filenames in os.walk(source, followlinks=True):
+        if '.git' in dirnames:
+            dirnames.remove('.git')
+        if '.hg' in dirnames:
+            dirnames.remove('.git')
+        if '.svn' in dirnames:
+            dirnames.remove('.git')
+
+        for name in dirs:
+            if name.startswith('.') and name in dirnames:
+                dirnames.remove(name)
+            elif name.startswith('_') and name in dirnames:
+                if not includes or name not in includes:
+                    dirnames.remove(name)
+
+        for filename in filenames:
+            if filename.startswith('.'):
+                # ignore hidden files
+                continue
+
+            filepath = os.path.join(dirpath, filename)
+            relpath = os.path.relpath(filepath, source)
+            if excludes and fnmatch.fnmatch(relpath, excludes):
+                continue
+
+            yield filepath

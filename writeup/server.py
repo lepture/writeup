@@ -11,7 +11,6 @@
 import os
 import sys
 import hashlib
-import datetime
 import mimetypes
 import email.utils
 from wsgiref.simple_server import make_server
