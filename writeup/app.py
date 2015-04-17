@@ -73,30 +73,31 @@ class Application(object):
     @cached_property
     def post_indexer(self):
         db_file = os.path.join(self.cachedir, 'post.index')
-        return Indexer(db_file, 'mtime', 'dirname', 'tags', 'date')
+        return Indexer(db_file, 'timestamp', 'dirname', 'tags')
 
     @cached_property
     def page_indexer(self):
         db_file = os.path.join(self.cachedir, 'page.index')
-        return Indexer(db_file, 'mtime', 'dirname', 'filename')
+        return Indexer(db_file, 'timestamp', 'dirname', 'filename')
 
     @cached_property
     def file_indexer(self):
         db_file = os.path.join(self.cachedir, 'file.index')
-        return Indexer(db_file, 'mtime', 'dirname', 'filename')
+        return Indexer(db_file, 'timestamp', 'dirname', 'filename')
 
     def filter_post_files(self, dirname=None, reverse=True, count=None):
         data = self.post_indexer
 
         if dirname:
             keys = filter(
-                lambda k: is_subdir(data[k]['dirname'], dirname),
-                data,
+                lambda k: is_subdir(data[k]['dirname'], dirname), data
             )
         else:
             keys = data.keys()
 
-        keys = sorted(keys, key=lambda k: data[k]['date'], reverse=reverse)
+        keys = sorted(
+            keys, key=lambda k: data[k]['timestamp'], reverse=reverse
+        )
         if count:
             keys = keys[:count]
         return keys
@@ -210,7 +211,7 @@ def create_jinja(layouts='_layouts', includes='_includes'):
     rv = {k: getattr(filters, k) for k in filters.__all__}
     jinja.filters.update(rv)
 
-    jinja._last_updated = max((os.path.getmtime(d) for d in loaders))
+    jinja._mtime = max((os.path.getmtime(d) for d in loaders))
     return jinja
 
 

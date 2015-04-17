@@ -4,6 +4,7 @@ import os
 import re
 import json
 import logging
+from datetime import datetime
 from .parser import parse
 from .utils import _top
 from .utils import cached_property, slugify, to_datetime, json_dump
@@ -147,6 +148,13 @@ class Request(object):
         if not tags:
             return []
         return [o.strip() for o in tags.split(',')]
+
+    @cached_property
+    def timestamp(self):
+        if self.file_type != 'post':
+            return self.mtime
+        delta_epoch = to_datetime(self._data['date']) - datetime(1970, 1, 1)
+        return delta_epoch.total_seconds()
 
     @cached_property
     def date(self):

@@ -25,6 +25,8 @@ logger = logging.getLogger('writeup')
 class Builder(object):
     def __init__(self, app):
         self.app = app
+        self.write_count = 0
+        self.build_count = 0
 
     @contextmanager
     def create_context(self, req):
@@ -32,9 +34,10 @@ class Builder(object):
         yield
         del _top.request
 
-    @staticmethod
-    def write(content, dest):
+    def write(self, content, dest):
         """Write given content to the destination."""
+        self.write_count += 1
+
         # make sure the directory exists
         folder = os.path.split(dest)[0]
         if not os.path.isdir(folder):
@@ -53,11 +56,13 @@ class PostBuilder(Builder):
             dest += '.html'
 
         dest = os.path.join(self.app.sitedir, dest.lstrip('/'))
-        if os.path.isfile(dest) and os.path.getmtime(dest) > req.mtime:
+        mtime = max(self.app.jinja._mtime, req.mtime)
+        if os.path.isfile(dest) and os.path.getmtime(dest) > mtime:
             return None
         return dest
 
     def build(self, filepath):
+        self.build_count += 1
         req = Request(filepath)
         logger.debug('building [%s]: %s' % (req.file_type, req.relpath))
         dest = self.get_destination(req)
@@ -74,6 +79,7 @@ class PostBuilder(Builder):
         logger.info('BUILDING POSTS')
         for filepath in self.app.post_indexer:
             self.build(filepath)
+        logger.info('WRITTING %i/%i' % (self.write_count, self.build_count))
 
 
 class PageBuilder(PostBuilder):
@@ -81,6 +87,7 @@ class PageBuilder(PostBuilder):
         logger.info('BUILDING PAGES')
         for filepath in self.app.page_indexer:
             self.build(filepath)
+        logger.info('WRITTING %i/%i' % (self.write_count, self.build_count))
 
 
 class FileBuilder(Builder):
@@ -99,7 +106,12 @@ class FileBuilder(Builder):
         dest = os.path.join(self.app.sitedir, relpath)
 
         with open(filepath, 'rb') as f:
-            tpl = self.app.jinja.from_string(to_unicode(f.read()))
+            source = to_unicode(f.read())
+            if u'site.posts' not in source and os.path.isfile(dest):
+                if os.path.getmtime(dest) > self.app.jinja._mtime:
+                    # ignore building html file when it don't iter posts
+                    return
+            tpl = self.app.jinja.from_string(source)
 
         with self.create_context(Request(filepath)):
             content = tpl.render()
@@ -110,11 +122,9 @@ class FileBuilder(Builder):
             tpl = self.app.jinja.from_string(to_unicode(f.read()))
 
         name = os.path.relpath(filepath, self.app.postsdir)
-        logger.debug('building [paginator]: %s' % name)
 
         dirname = os.path.dirname(name) or None
 
-        dest = os.path.join(self.app.sitedir, name)
         root = re.sub(r'index.html$', '', name)
         root = root.replace('\\', '/')
         if root == '.':
@@ -127,30 +137,25 @@ class FileBuilder(Builder):
         else:
             items = self.app.post_indexer.keys()
 
-        paginator = Paginator(items, 1)
-        paginator.per_page = self.app.config.get('perpage', 100)
-        paginator._style = self.app.config.get('paginator_style', 'page-:num')
-        paginator._root = root
+        paginator = Paginator(items, 1, root=root)
+        logger.info(
+            'BUILDING %s [%i|%i]' % (name, paginator.pages, paginator.total)
+        )
+        paginator.per_page = self.app.config.get('paginate', 10)
+        paginator.path = self.app.config.get('paginate_path', 'page/:num')
 
         with self.create_context(Request(filepath, url=paginator.url)):
             content = tpl.render({'paginator': paginator})
-            self.write(content, dest)
+            self.write(content, paginator.create_dest(self.app.sitedir))
 
         if paginator.pages < 2:
             return
 
         for i in range(2, paginator.pages + 1):
             paginator.page = i
-            url = paginator._style.replace(':num', str(i))
-            if url.endswith('/'):
-                url += 'index.html'
-            elif not url.endswith('.html'):
-                url += '.html'
-
-            new_dest = re.sub(r'index.html$', url, dest)
             with self.create_context(Request(filepath, url=paginator.url)):
                 content = tpl.render({'paginator': paginator})
-                self.write(content, new_dest)
+                self.write(content, paginator.create_dest(self.app.sitedir))
 
     def build_asset(self, filepath):
         if self.app.postsdir in filepath:
@@ -158,7 +163,7 @@ class FileBuilder(Builder):
             return
 
         if not os.path.exists(filepath):
-            # TODO: clean indexer
+            del self.app.file_indexer[filepath]
             return
 
         name = os.path.relpath(filepath, self.app.basedir)
@@ -191,15 +196,13 @@ class FileBuilder(Builder):
 class Paginator(object):
     """Paginator generator."""
 
-    _cache = None
-    _style = 'page-:num'
-    _root = '/'
+    path = 'page-:num'
+    per_page = 10
 
-    per_page = 100
-
-    def __init__(self, items, page):
+    def __init__(self, items, page, root='/'):
         self.items = items
         self.page = page
+        self.root = root
 
     @property
     def total(self):
@@ -219,9 +222,17 @@ class Paginator(object):
 
     def create_url(self, num):
         if num == 1:
-            return self._root
-        rv = self._style.replace(':num', str(num))
-        return self._root + rv
+            return self.root
+        rv = self.path.replace(':num', str(num))
+        return self.root + rv
+
+    def create_dest(self, sitedir):
+        dest = self.url.lstrip('/')
+        if dest.endswith('/'):
+            dest += 'index.html'
+        elif not dest.endswith('.html'):
+            dest += '.html'
+        return os.path.join(sitedir, dest)
 
     @property
     def url(self):
