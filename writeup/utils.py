@@ -13,8 +13,12 @@ import re
 import json
 import shutil
 import datetime
+import threading
 import unicodedata
 from ._compat import to_bytes, to_unicode
+
+
+_top = threading.local()
 
 
 class _Missing(object):

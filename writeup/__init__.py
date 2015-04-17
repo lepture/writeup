@@ -35,6 +35,7 @@ class Writeup(object):
 
     def run(self):
         with self.app.create_context():
+            self.app.create_index()
             self.post_builder.run()
             self.page_builder.run()
             self.file_builder.run()

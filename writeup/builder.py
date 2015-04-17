@@ -14,7 +14,7 @@ import re
 import shutil
 import logging
 from contextlib import contextmanager
-from .globals import _top
+from .utils import _top
 from .request import Request
 from ._compat import to_unicode, to_bytes
 

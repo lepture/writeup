@@ -7,7 +7,7 @@ from markupsafe import escape
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
-from .globals import current_app
+from .utils import _top
 
 
 def _iframe(src, width=650, height=365, content=None, link=None):
@@ -221,7 +221,7 @@ def markdown(text, highlight=True, inlinestyles=False, linenos=False,
 
     ident = hash((highlight, inlinestyles, linenos, lazyimg))
     key = 'markdown.%i.%s' % (ident, cache_key)
-    cache_file = os.path.join(current_app.cachedir, key)
+    cache_file = os.path.join(_top.app.cachedir, key)
     if os.path.is_file(cache_file):
         with open(cache_file, 'rb') as f:
             return f.read()

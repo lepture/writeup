@@ -1,12 +1,14 @@
 # coding: utf-8
 
 import os
+import pytz
 import json
 import fnmatch
 import logging
+import datetime
 from contextlib import contextmanager
 from .request import Request
-from .globals import _top
+from .utils import _top
 from .utils import cached_property
 from .utils import json_dump
 
@@ -54,7 +56,9 @@ class Application(object):
     def jinja(self):
         layouts = self.config.get('layouts', '_layouts')
         includes = self.config.get('includes', '_includes')
-        return create_jinja(layouts, includes)
+        jinja = create_jinja(layouts, includes)
+        jinja.globals.update(create_jinja_globals(self))
+        return jinja
 
     @contextmanager
     def create_context(self):
@@ -78,6 +82,7 @@ class Application(object):
         return Indexer(db_file, 'mtime', 'dirname', 'filename')
 
     def create_index(self):
+        logger.info('indexing')
 
         def index_request(req):
             logger.debug('indexing [%s]: %s' % (req.post_type, req.relpath))
@@ -108,7 +113,7 @@ class Application(object):
 class Indexer(object):
     def __init__(self, db_file, *keys):
         self.db_file = db_file
-        self.keys = keys
+        self._keys = keys
 
     @cached_property
     def mtime(self):
@@ -128,7 +133,7 @@ class Indexer(object):
         if self.mtime and self.mtime > req.mtime:
             # ignore this file
             return
-        value = {k: getattr(req, k) for k in self.keys}
+        value = {k: getattr(req, k) for k in self._keys}
         self._data[req.filepath] = value
 
     def keys(self):
@@ -223,3 +228,41 @@ def walk_tree(source, includes=None, excludes=None):
                 continue
 
             yield filepath
+
+
+def create_jinja_globals(app):
+
+    site = app.config.copy()
+    tz = pytz.timezone(site.get('timezone', 'Asia/Shanghai'))
+    site['now'] = tz.localize(datetime.datetime.now())
+
+    def filter_posts(subdirectory=None, reverse=True, count=None):
+        dirname = subdirectory
+
+        def get_posts():
+            for key in app.post_indexer._data:
+                rv = app.post_indexer._data[key]
+                if dirname is not None and rv['dirname'] != dirname:
+                    continue
+                rv['filepath'] = key
+                yield rv
+
+        posts = sorted(get_posts(), key=lambda o: o['date'], reverse=reverse)
+        if count:
+            posts = posts[:count]
+
+        for rv in posts:
+            yield Request(rv['filepath'])
+
+    site['posts'] = filter_posts
+
+    def static_url(filepath, url=None):
+        """Generate static url."""
+        if not url:
+            url = '/' + filepath
+
+        abspath = os.path.join(app.basedir, filepath)
+        t = int(os.path.getmtime(abspath))
+        return '%s?t=%i' % (url, t)
+
+    return {'site': site, 'static_url': static_url}

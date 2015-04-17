@@ -6,7 +6,7 @@ import json
 import pytz
 import logging
 from .parser import parse
-from .globals import current_app
+from .utils import _top
 from .utils import cached_property, slugify, to_datetime, json_dump
 
 logger = logging.getLogger('writeup')
@@ -15,6 +15,7 @@ logger = logging.getLogger('writeup')
 class Request(object):
     def __init__(self, filepath, **kwargs):
         self.filepath = filepath
+        self._app = kwargs.pop('app', _top.app)
         self._values = kwargs
 
     @cached_property
@@ -36,7 +37,7 @@ class Request(object):
         return data
 
     def _parse_file(self):
-        filepath = os.path.join(current_app.cachedir, self._cache_key)
+        filepath = os.path.join(self._app.cachedir, self._cache_key)
 
         if os.path.exists(filepath):
             with open(filepath, 'rb') as f:
@@ -68,7 +69,7 @@ class Request(object):
         if not self._should_parse_file():
             return 'file'
 
-        if current_app.postsdir not in self.filepath:
+        if self._app.postsdir not in self.filepath:
             return 'page'
 
         if 'status' in self._data and self._data['status'] == 'draft':
@@ -81,10 +82,10 @@ class Request(object):
 
     @cached_property
     def relpath(self):
-        if current_app.postsdir in self.filepath:
-            relpath = os.path.relpath(self.filepath, current_app.postsdir)
+        if self._app.postsdir in self.filepath:
+            relpath = os.path.relpath(self.filepath, self._app.postsdir)
         else:
-            relpath = os.path.relpath(self.filepath, current_app.basedir)
+            relpath = os.path.relpath(self.filepath, self._app.basedir)
 
         if relpath.startswith('..'):
             raise RuntimeError('Parse error for relpath.')
@@ -108,7 +109,7 @@ class Request(object):
         if 'url' in self._data:
             return self._data['url']
 
-        style = current_app.permalink
+        style = self._app.permalink
         if self.post_type == 'post':
             return create_permalink(self, style)
 
@@ -146,22 +147,12 @@ class Request(object):
 
     @cached_property
     def date(self):
-        timezone = current_app.config.get('timezone')
+        timezone = self._app.config.get('timezone')
         if not timezone:
             timezone = 'Asia/Chongqing'
 
         tz = pytz.timezone(timezone)
         return tz.localize(to_datetime(self._data['date']))
-
-
-def static_url(filepath, url=None):
-    """Generate static url."""
-    if not url:
-        url = '/' + filepath
-
-    abspath = os.path.join(current_app.basedir, filepath)
-    t = int(os.path.getmtime(abspath))
-    return '%s?t=%i' % (url, t)
 
 
 def create_permalink(obj, style):
