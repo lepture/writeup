@@ -59,7 +59,7 @@ class PostBuilder(Builder):
 
     def build(self, filepath):
         req = Request(filepath)
-        logger.debug('building [%s]: %s' % (req.post_type, req.relpath))
+        logger.debug('building [%s]: %s' % (req.file_type, req.relpath))
         dest = self.get_destination(req)
         if not dest:
             return
@@ -71,12 +71,14 @@ class PostBuilder(Builder):
             self.write(content, dest)
 
     def run(self):
+        logger.info('building posts')
         for filepath in self.app.post_indexer.keys():
             self.build(filepath)
 
 
 class PageBuilder(PostBuilder):
     def run(self):
+        logger.info('building pages')
         for filepath in self.app.page_indexer.keys():
             self.build(filepath)
 
@@ -178,6 +180,7 @@ class FileBuilder(Builder):
             self.build_asset(filepath)
 
     def run(self):
+        logger.info('building files')
         for filepath in self.app.file_indexer.keys():
             self.build(filepath)
 

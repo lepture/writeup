@@ -85,12 +85,12 @@ class Application(object):
         logger.info('indexing')
 
         def index_request(req):
-            logger.debug('indexing [%s]: %s' % (req.post_type, req.relpath))
-            if req.post_type == 'post':
+            logger.debug('indexing [%s]: %s' % (req.file_type, req.relpath))
+            if req.file_type == 'post':
                 self.post_indexer.add(req)
-            elif req.post_type == 'page':
+            elif req.file_type == 'page':
                 self.page_indexer.add(req)
-            elif req.post_type == 'file':
+            elif req.file_type == 'file':
                 self.file_indexer.add(req)
 
         if self.basedir in self.postsdir:

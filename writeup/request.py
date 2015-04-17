@@ -65,7 +65,7 @@ class Request(object):
         return ext in ('.md', '.mkd', '.markdown')
 
     @cached_property
-    def post_type(self):
+    def file_type(self):
         if not self._should_parse_file():
             return 'file'
 
@@ -110,7 +110,7 @@ class Request(object):
             return self._data['url']
 
         style = self._app.permalink
-        if self.post_type == 'post':
+        if self.file_type == 'post':
             return create_permalink(self, style)
 
         if self.dirname:
@@ -133,6 +133,10 @@ class Request(object):
         return self._data.get('description')
 
     @cached_property
+    def body(self):
+        return self._data.get('content')
+
+    @cached_property
     def content(self):
         return self._data.get('content')
 
@@ -147,6 +151,9 @@ class Request(object):
 
     @cached_property
     def date(self):
+        if self.file_type != 'post':
+            return None
+
         timezone = self._app.config.get('timezone')
         if not timezone:
             timezone = 'Asia/Chongqing'
