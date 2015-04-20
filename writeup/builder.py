@@ -102,7 +102,7 @@ class FileBuilder(Builder):
         else:
             relpath = os.path.relpath(filepath, self.app.basedir)
 
-        logger.debug('building [html]: %s' % relpath)
+        logger.info('BUILDING %s' % relpath)
         dest = os.path.join(self.app.sitedir, relpath)
 
         with open(filepath, 'rb') as f:

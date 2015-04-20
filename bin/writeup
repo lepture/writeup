@@ -28,13 +28,8 @@ class WriteupHandler(logging.Handler):
 
     def emit(self, record):
         msg = record.msg.replace(self.cwd, '')
-        now = int(time.time() * 1000)
-        if self.last:
-            delta = now - self.last
-        else:
-            delta = 0
 
-        self.last = now
+        now = int(time.time() * 1000)
         mark = str(now)[-5:]
         std = sys.stdout
 
@@ -48,8 +43,7 @@ class WriteupHandler(logging.Handler):
             mark = color.red(mark)
             std = sys.stderr
 
-        msg = msg.ljust(36)
-        output = '  %s: %s %s\n' % (mark, msg, color.blue(str(delta)))
+        output = '  %s: %s\n' % (mark, msg)
         std.write(output)
 
 logger.addHandler(WriteupHandler())
