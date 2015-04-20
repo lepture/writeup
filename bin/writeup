@@ -50,14 +50,11 @@ logger.addHandler(WriteupHandler())
 
 
 @program.subcommand
-def build(config='_config.yml', source='.', dest='_site',
-          postsdir='_posts', force=False, verbose=False):
+def build(config='_config.yml', dest='_site', force=False, verbose=False):
     """Build your site.
 
     :param config: Custom configuration file
-    :param source: Source for the site
     :param dest: Output for the destination
-    :param postsdir: Specify the post directory
     :param force: Ignore cache, force build the site
     :param verbose: Show verbose logging
     """
@@ -76,14 +73,12 @@ def build(config='_config.yml', source='.', dest='_site',
 
 
 @program.subcommand
-def serve(config='_config.yml', source='.', dest='_site', postsdir='_posts',
+def serve(config='_config.yml', dest='_site',
           force=False, host='127.0.0.1', port=4000, build=True, verbose=False):
     """Start a preview server.
 
     :param config: Custom configuration file
-    :param source: Source for the site
     :param dest: Output for the destination
-    :param postsdir: Specify the post directory
     :param host: Define server hostname
     :param port: Define server port
     :param force: Ignore cache, force build the site
