@@ -46,18 +46,16 @@ class WriteupHandler(logging.Handler):
         output = '  %s: %s\n' % (mark, msg)
         std.write(output)
 
-logger.addHandler(WriteupHandler())
-
 
 @program.subcommand
-def build(config='_config.yml', dest='_site', force=False, verbose=False):
+def build(config='_config.yml', force=False, verbose=False):
     """Build your site.
 
     :param config: Custom configuration file
-    :param dest: Output for the destination
     :param force: Ignore cache, force build the site
     :param verbose: Show verbose logging
     """
+    logger.addHandler(WriteupHandler())
     if verbose:
         logger.setLevel(logging.DEBUG)
     else:
@@ -65,42 +63,39 @@ def build(config='_config.yml', dest='_site', force=False, verbose=False):
 
     from writeup import Writeup
 
-    app = Writeup(config=config)
+    wp = Writeup(config=config)
     begin = time.time()
-    app.run()
+    wp.run()
     delta = (time.time() - begin) * 1000
     print('  Finish in %s ms' % color.cyan(str(int(delta))))
 
 
 @program.subcommand
-def serve(config='_config.yml', dest='_site',
-          force=False, host='127.0.0.1', port=4000, build=True, verbose=False):
+def serve(config='_config.yml', host='127.0.0.1', port=4000):
     """Start a preview server.
 
     :param config: Custom configuration file
-    :param dest: Output for the destination
     :param host: Define server hostname
     :param port: Define server port
-    :param force: Ignore cache, force build the site
-    :param build: Enable build in server
-    :param verbose: Show verbose logging
     """
-    if verbose:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
+    from writeup import Writeup
     from writeup.server import Server
 
-    server = Server(dest)
+    wp = Writeup(config=config)
+    server = Server(wp.app.sitedir)
 
     try:
         from livereload import Server as LiveServer
 
-        liveserver = LiveServer(server.wsgi)
-        # liveserver.watcher._ignore_folders = ['.git', dest]
-        # liveserver.watch(source, watch)
-        liveserver.serve(port=port)
+        server = LiveServer(server.wsgi)
+
+        def watch():
+            wp.build(server.watcher.filepath)
+
+        server.watch(wp.app.postsdir, watch)
+        server.serve(host=host, port=port)
     except ImportError:
         try:
             server.serve_forever(host, port)
