@@ -25,6 +25,10 @@ class BaseRenderer(m.Renderer):
         html = '<a href="%s"' % link
         if title:
             html = '%s title="%s"' % (html, title)
+
+        if '<figure><img' in content:
+            return re.sub(r'(<img.*?>)', r'%s>\1</a>' % html, content)
+
         html = '%s>%s</a>' % (html, content)
         return html
 
@@ -62,18 +66,6 @@ class BaseRenderer(m.Renderer):
 
 
 class HighlightRenderer(BaseRenderer):
-    def autolink(self, link, is_email):
-        html = gist(link)
-        if html:
-            return html
-        return super(HighlightRenderer, self).autolink(link, is_email)
-
-    def link(self, link, title, content):
-        html = gist(link, content)
-        if html:
-            return html
-        return super(HighlightRenderer, self).link(link, title, content)
-
     def block_code(self, text, lang):
         if not lang:
             text = text.strip()
