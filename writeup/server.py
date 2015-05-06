@@ -28,10 +28,10 @@ class Server(object):
 
         if url.endswith('/'):
             url += 'index.html'
-        elif not os.path.exists(url) and not url.endswith('.html'):
+        elif not os.path.isfile(url) and not url.endswith('.html'):
             url += '.html'
 
-        if not os.path.exists(url):
+        if not os.path.isfile(url):
             return None
         return url
 
