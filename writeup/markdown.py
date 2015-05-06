@@ -11,74 +11,6 @@ from .utils import _top
 from ._compat import to_bytes, to_unicode
 
 
-def _iframe(src, width=650, height=365, content=None, link=None):
-    """Create an iframe html snippet."""
-    html = (
-        '<iframe width="%s" height="%s" src="%s" '
-        'frameborder="0" allowfullscreen></iframe>'
-    ) % (width, height, src)
-    if not content:
-        return html
-    if link:
-        content = '<a href="%s">%s</a>' % (link, content)
-    return '<figure>%s<figcaption>%s</figcaption></figure>' % (
-        html, content
-    )
-
-
-def youtube(link):
-    """Find youtube player URL."""
-    pattern = r'https?://www\.youtube\.com\/watch\?v=([a-zA-Z0-9\-\_]+)'
-    match = re.match(pattern, link)
-    if not match:
-        pattern = r'http:\/\/youtu.be\/([a-zA-Z0-9\-\_]+)'
-        match = re.match(pattern, link)
-    if not match:
-        return None
-    return 'http://www.youtube.com/embed/%s' % match.group(1)
-
-
-def vimeo(link):
-    """Find vimeo player URL."""
-    pattern = r'https?:\/\/vimeo\.com\/([\d]+)'
-    match = re.match(pattern, link)
-    if not match:
-        return None
-    return 'https://player.vimeo.com/video/%s' % match.group(1)
-
-
-def youku(link):
-    """Find youku player URL."""
-    pattern = r'http:\/\/v\.youku\.com\/v_show\/id_([\w]+)\.html'
-    match = re.match(pattern, link)
-    if not match:
-        return None
-    return 'http://player.youku.com/embed/%s' % match.group(1)
-
-
-def gist(link, content=None):
-    """Render gist script."""
-    pattern = r'(https?:\/\/gist\.github\.com\/.+\d+)'
-    match = re.match(pattern, link)
-    if not match:
-        return None
-    html = '<script src="%s.js"></script>' % match.group(1)
-    if not content:
-        return html
-    return '<figure>%s<figcaption>%s</figcaption></figure>' % (
-        html, content
-    )
-
-
-def embed(link, width=650, height=366, content=None):
-    for fn in [youtube, vimeo, youku]:
-        if fn.__name__ in link:
-            src = fn(link)
-            if src:
-                return _iframe(src, width, height, content, link)
-    return None
-
-
 class BaseRenderer(m.Renderer):
     def autolink(self, link, is_email):
         if is_email:
@@ -90,18 +22,6 @@ class BaseRenderer(m.Renderer):
         return '<a href="%s">%s</a>' % (link, content)
 
     def link(self, link, title, content):
-        width = 650
-        height = 366
-        if title:
-            # title can descibe height and width: 650 x 366
-            pattern = r'(\d{3,4})[^\d]+(\d{3})'
-            match = re.match(pattern, title)
-            if match:
-                width = match.group(1)
-                height = match.group(2)
-        html = embed(link, width, height, content)
-        if html:
-            return html
         html = '<a href="%s"' % link
         if title:
             html = '%s title="%s"' % (html, title)
