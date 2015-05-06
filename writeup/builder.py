@@ -48,18 +48,31 @@ class Builder(object):
 
 
 class PostBuilder(Builder):
-    def get_destination(self, req):
-        dest = req.url
-        if dest.endswith('/'):
-            dest += 'index.html'
-        elif not dest.endswith('.html'):
-            dest += '.html'
+    def get_html_destination(self, url):
+        if url.endswith('/'):
+            url += 'index.html'
+        elif not url.endswith('.html'):
+            url += '.html'
+        return os.path.join(self.app.sitedir, url.lstrip('/'))
 
-        dest = os.path.join(self.app.sitedir, dest.lstrip('/'))
+    def get_destination(self, req):
+        dest = self.get_html_destination(req.url)
         mtime = max(self.app.jinja._mtime, req.mtime)
         if os.path.isfile(dest) and os.path.getmtime(dest) > mtime:
             return None
         return dest
+
+    def build_redirect(self, redirect_from, req):
+        logger.debug('building [redirect]: %s -> %s' % (
+            redirect_from, req.url))
+        dest = self.get_html_destination(redirect_from)
+        html = (
+            '<html><head><title>%s</title>'
+            '<meta http-equiv="refresh" content="0; url=%s">'
+            '<script>location.href="%s"</script>'
+            '</head></html>'
+        ) % (req.title, req.url, req.url)
+        self.write(html, dest)
 
     def build(self, filepath):
         self.build_count += 1
@@ -70,6 +83,9 @@ class PostBuilder(Builder):
             return
         template = req.template or 'post.html'
         tpl = self.app.jinja.get_template(template)
+
+        for redirect_from in req._data.get('redirect_from', []):
+            self.build_redirect(redirect_from, req)
 
         with self.create_context(req):
             content = tpl.render({'page': req})
