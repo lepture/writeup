@@ -125,6 +125,11 @@ class Request(object):
         return re.sub(r'\/{2,}', '/', url)
 
     @cached_property
+    def full_url(self):
+        baseurl = self._app.config.get('baseurl', '')
+        return baseurl.rstrip('/') + self.url
+
+    @cached_property
     def title(self):
         return self._data.get('title')
 

@@ -67,11 +67,12 @@ class PostBuilder(Builder):
             redirect_from, req.url))
         dest = self.get_html_destination(redirect_from)
         html = (
-            '<html><head><title>%s</title>'
-            '<meta http-equiv="refresh" content="0; url=%s">'
-            '<script>location.href="%s"</script>'
+            '<html><head><title>%(title)s</title>'
+            '<meta http-equiv="refresh" content="0; url=%(url)s">'
+            '<link rel="canonical" href="%(url)s">'
+            '<script>location.href="%(url)s"</script>'
             '</head></html>'
-        ) % (req.title, req.url, req.url)
+        ) % {'title': req.title, 'url': req.full_url}
         self.write(html, dest)
 
     def build(self, filepath):
