@@ -15,9 +15,6 @@ class BaseRenderer(m.Renderer):
     def autolink(self, link, is_email):
         if is_email:
             return '<a href="mailto:%(link)s">%(link)s</a>' % {'link': link}
-        html = embed(link)
-        if html:
-            return html
         content = link.replace('http://', '').replace('https://', '')
         return '<a href="%s">%s</a>' % (link, content)
 
