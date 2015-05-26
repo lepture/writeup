@@ -266,14 +266,35 @@ def create_jinja_globals(app):
     site = app.config.copy()
     site['now'] = app.timezone.localize(datetime.datetime.now())
 
-    def filter_posts(subdirectory=None, reverse=True, count=None):
-        dirname = subdirectory
+    def filter_posts(dirname=None, reverse=True, count=None):
         keys = app.filter_post_files(dirname, reverse=reverse, count=count)
 
         for k in keys:
             yield Request(k)
 
+    def get_related_posts(req, dirname=None, count=2):
+        data = app.post_indexer
+
+        def _filter(k):
+            if k == req.filepath:
+                return False
+            if dirname and not is_subdir(data[k]['dirname'], dirname):
+                return False
+            return set(data[k]['tags']) & set(req.tags)
+
+        keys = list(filter(_filter, data))
+
+        keys = sorted(
+            keys, key=lambda k: req.timestamp - data[k]['timestamp']
+        )[:count]
+        keys = sorted(
+            keys, key=lambda k: data[k]['timestamp'], reverse=True,
+        )
+        for k in keys:
+            yield Request(k)
+
     site['posts'] = filter_posts
+    site['related'] = get_related_posts
     # site['request'] = _top.request
 
     def static_url(filepath, url=None):
