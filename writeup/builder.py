@@ -46,6 +46,12 @@ class Builder(object):
         with open(dest, 'wb') as f:
             f.write(to_bytes(content))
 
+    def log_build(self, func, filepath):
+        try:
+            func(filepath)
+        except Exception as e:
+            logger.error('BUILDING ERROR %r' % e)
+
 
 class PostBuilder(Builder):
     def get_html_destination(self, url):
@@ -95,7 +101,7 @@ class PostBuilder(Builder):
     def run(self):
         logger.info('BUILDING POSTS')
         for filepath in self.app.post_indexer:
-            self.build(filepath)
+            self.log_build(self.build, filepath)
         logger.info('WRITTING %i/%i' % (self.write_count, self.build_count))
 
 
@@ -103,7 +109,7 @@ class PageBuilder(PostBuilder):
     def run(self):
         logger.info('BUILDING PAGES')
         for filepath in self.app.page_indexer:
-            self.build(filepath)
+            self.log_build(self.build, filepath)
         logger.info('WRITTING %i/%i' % (self.write_count, self.build_count))
 
 
