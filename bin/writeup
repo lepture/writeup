@@ -78,8 +78,6 @@ def serve(config='_config.yml', host='127.0.0.1', port=4000):
     :param host: Define server hostname
     :param port: Define server port
     """
-    logger.setLevel(logging.DEBUG)
-
     from writeup import Writeup
     from writeup.server import Server
 
@@ -88,6 +86,9 @@ def serve(config='_config.yml', host='127.0.0.1', port=4000):
 
     try:
         from livereload import Server as LiveServer
+        from tornado.log import enable_pretty_logging
+        enable_pretty_logging(logger=logger)
+        logger.setLevel(logging.DEBUG)
 
         server = LiveServer(server.wsgi)
 
