@@ -96,6 +96,7 @@ def serve(config='_config.yml', host='127.0.0.1', port=4000):
             wp.build(server.watcher.filepath)
 
         server.watch(wp.app.postsdir, watch)
+        server.watch('*.html', watch)
         server.serve(host=host, port=port)
     except ImportError:
         try:
