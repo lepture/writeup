@@ -20,6 +20,8 @@ class BaseRenderer(m.Renderer):
 
     def link(self, link, title, content):
         html = '<a href="%s"' % link
+        if '<img' in content:
+            html = '%s class="img-link"' % html
         if title:
             html = '%s title="%s"' % (html, title)
 
